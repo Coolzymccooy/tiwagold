@@ -1,0 +1,61 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx expo:*)",
+      "Bash(npx expo-doctor:*)",
+      "Bash(npx create-expo-app:*)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run lint)",
+      "Bash(npm run test)",
+      "Bash(npm run ios)",
+      "Bash(npm run android)",
+      "Bash(npm run start)",
+      "Bash(npm install:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git mv:*)",
+      "Bash(git rm:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-files.sh\""
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/rn-guard.sh\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/changed-files-check.sh\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Enforce the repo's agent-stop gate from .claude/rules/09-done-criteria.md. Distinguish AGENT-AUTOMATED gate from HUMAN sign-off.\n\nAGENT-AUTOMATED gate (required for PASS): `npm run typecheck`, `npm run lint`, `npm run test`, `npx expo-doctor` — all green in this session, or an explicit explanation of why a check was not applicable (e.g. no code changed).\n\nHUMAN sign-off (NEVER blocks stop): Device matrix (iPhone SE / iPhone 15 Pro / Pixel 7) and `eas build --profile preview`. These are explicitly out of the agent sandbox per rules/09-done-criteria.md. Agent must mark these as pending rather than block on them.\n\nRules:\n1. PASS if the agent-automated gate is green AND the final response either (a) lists pending human sign-off items explicitly, or (b) has no pending human items (e.g. doc-only or hook-only changes).\n2. BLOCK only if: (i) any required automated check failed or was skipped without explanation, OR (ii) the response falsely claims full completion without acknowledging pending human verification when device/EAS items remain.\n3. Do NOT block on device-matrix or EAS items themselves — those are human sign-off by rule.\n\nExpected completion wording in the final message (per rules/09-done-criteria.md):\n  Agent-automated gate: PASS or FAIL\n  Human sign-off pending: <items or none>\n\nIf BLOCK, return {\"ok\": false, \"reason\": \"which automated check failed/skipped, or which false-completion claim was made\"}. Otherwise return {\"ok\": true}."
+          }
+        ]
+      }
+    ]
+  }
+}
