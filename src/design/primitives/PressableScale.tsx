@@ -6,6 +6,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -19,6 +20,20 @@ export interface PressableScaleProps extends Omit<PressableProps, "style"> {
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+const snapEasing = Easing.bezier(
+  easing.snap[0],
+  easing.snap[1],
+  easing.snap[2],
+  easing.snap[3],
+);
+
+const gentleEasing = Easing.bezier(
+  easing.gentle[0],
+  easing.gentle[1],
+  easing.gentle[2],
+  easing.gentle[3],
+);
 
 export function PressableScale({
   children,
@@ -40,14 +55,14 @@ export function PressableScale({
       onPressIn={(e) => {
         scale.value = withTiming(scaleTo, {
           duration: duration.fast,
-          easing: (t) => t,
+          easing: snapEasing,
         });
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
         scale.value = withTiming(1, {
           duration: duration.base,
-          easing: (t) => t,
+          easing: gentleEasing,
         });
         onPressOut?.(e);
       }}
@@ -57,5 +72,3 @@ export function PressableScale({
     </AnimatedPressable>
   );
 }
-
-export const __pressEasing = easing;
