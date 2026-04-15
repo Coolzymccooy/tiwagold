@@ -1,7 +1,12 @@
-import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
-import { GlassCard, PressableScale, Screen, Text } from "@/design/primitives";
-import { palette, radius, spacing } from "@/design/tokens";
+import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { GlassCard, Screen, Text } from "@/design/primitives";
+import { palette, spacing } from "@/design/tokens";
 import { COPY } from "@/content/copy";
+import {
+  AnalyticsEmpty,
+  AnalyticsError,
+  AnalyticsLoading,
+} from "./components/AnalyticsStates";
 import { BreakdownList, type BreakdownRow } from "./components/BreakdownList";
 import { EquitySparklineCard } from "./components/EquitySparklineCard";
 import { KpiGrid } from "./components/KpiGrid";
@@ -9,55 +14,18 @@ import { useAnalytics } from "./hooks";
 import type { EngineRow, ModeRow, SessionRow } from "./types";
 
 export function AnalyticsScreen() {
-  const { view, isLoading, isError, refetch } = useAnalytics();
+  const { view, isLoading, isRefreshing, isError, refetch } = useAnalytics();
 
   if (isLoading) {
-    return (
-      <Screen padded>
-        <GlassCard style={styles.stateCard}>
-          <ActivityIndicator color={palette.accent.gold} />
-        </GlassCard>
-      </Screen>
-    );
+    return <AnalyticsLoading />;
   }
 
   if (isError || !view) {
-    return (
-      <Screen padded>
-        <GlassCard style={styles.stateCard}>
-          <Text variant="title" weight="semibold" align="center" tone="danger">
-            {COPY.analytics.empty.title}
-          </Text>
-          <Text variant="body" tone="muted" align="center">
-            {COPY.analytics.empty.body}
-          </Text>
-          <PressableScale
-            accessibilityRole="button"
-            onPress={refetch}
-            style={styles.retry}
-          >
-            <Text variant="title" weight="semibold" align="center">
-              {COPY.common.retry}
-            </Text>
-          </PressableScale>
-        </GlassCard>
-      </Screen>
-    );
+    return <AnalyticsError onRetry={refetch} />;
   }
 
   if (!view.hasData) {
-    return (
-      <Screen padded>
-        <GlassCard style={styles.stateCard}>
-          <Text variant="title" weight="semibold" align="center">
-            {COPY.analytics.empty.title}
-          </Text>
-          <Text variant="body" tone="muted" align="center">
-            {COPY.analytics.empty.body}
-          </Text>
-        </GlassCard>
-      </Screen>
-    );
+    return <AnalyticsEmpty />;
   }
 
   const changeTone = resolveChangeTone(view.equity.changeR);
@@ -68,6 +36,13 @@ export function AnalyticsScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refetch}
+            tintColor={palette.accent.gold}
+          />
+        }
       >
         <View style={styles.header}>
           <Text variant="headline" weight="bold">
@@ -175,14 +150,5 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     gap: spacing.md,
-  },
-  stateCard: {
-    gap: spacing.md,
-    marginTop: spacing.xl,
-  },
-  retry: {
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: palette.accent.gold,
   },
 });

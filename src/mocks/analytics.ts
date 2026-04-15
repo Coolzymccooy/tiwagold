@@ -15,6 +15,8 @@ const equityCurve: EquityPoint[] = [
 export const MOCK_ANALYTICS: AnalyticsSummary = {
   range: "30d",
   totalTrades: 18,
+  activeTrades: 3,
+  closedTrades: 15,
   winRate: 0.61,
   avgR: 0.42,
   totalR: 6.1,

@@ -61,16 +61,30 @@ function buildKpis(summary: AnalyticsSummary): AnalyticsKpi[] {
       : `${summary.streak.count} ${summary.streak.kind}`;
   return [
     {
-      id: "totalTrades",
-      label: labels.totalTrades,
-      value: formatInt(summary.totalTrades),
-      tone: "neutral",
+      id: "totalR",
+      label: labels.totalR,
+      value: formatR(summary.totalR),
+      tone: toneForR(summary.totalR),
+      emphasis: "hero",
     },
     {
       id: "winRate",
       label: labels.winRate,
       value: formatPct(summary.winRate),
       tone: summary.winRate >= 0.5 ? "positive" : "negative",
+      emphasis: "hero",
+    },
+    {
+      id: "activeTrades",
+      label: labels.activeTrades,
+      value: formatInt(summary.activeTrades),
+      tone: "neutral",
+    },
+    {
+      id: "closedTrades",
+      label: labels.closedTrades,
+      value: formatInt(summary.closedTrades),
+      tone: "neutral",
     },
     {
       id: "avgR",
@@ -79,10 +93,10 @@ function buildKpis(summary: AnalyticsSummary): AnalyticsKpi[] {
       tone: toneForR(summary.avgR),
     },
     {
-      id: "totalR",
-      label: labels.totalR,
-      value: formatR(summary.totalR),
-      tone: toneForR(summary.totalR),
+      id: "expectancy",
+      label: labels.expectancy,
+      value: formatR(summary.expectancy),
+      tone: toneForR(summary.expectancy),
     },
     {
       id: "bestTrade",
@@ -97,10 +111,10 @@ function buildKpis(summary: AnalyticsSummary): AnalyticsKpi[] {
       tone: toneForR(summary.worstTradeR),
     },
     {
-      id: "expectancy",
-      label: labels.expectancy,
-      value: formatR(summary.expectancy),
-      tone: toneForR(summary.expectancy),
+      id: "totalTrades",
+      label: labels.totalTrades,
+      value: formatInt(summary.totalTrades),
+      tone: "neutral",
     },
     {
       id: "streak",

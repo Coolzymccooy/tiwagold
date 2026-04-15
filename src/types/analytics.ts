@@ -40,6 +40,8 @@ export interface ModeBreakdown {
 export interface AnalyticsSummary {
   range: AnalyticsRange;
   totalTrades: number;
+  activeTrades: number;
+  closedTrades: number;
   winRate: number;
   avgR: number;
   totalR: number;

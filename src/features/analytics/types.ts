@@ -6,19 +6,24 @@ import type {
   SessionBreakdown,
 } from "@/types/analytics";
 
+export type AnalyticsKpiId =
+  | "totalTrades"
+  | "activeTrades"
+  | "closedTrades"
+  | "winRate"
+  | "avgR"
+  | "totalR"
+  | "bestTrade"
+  | "worstTrade"
+  | "expectancy"
+  | "streak";
+
 export interface AnalyticsKpi {
-  id:
-    | "totalTrades"
-    | "winRate"
-    | "avgR"
-    | "totalR"
-    | "bestTrade"
-    | "worstTrade"
-    | "expectancy"
-    | "streak";
+  id: AnalyticsKpiId;
   label: string;
   value: string;
   tone: "neutral" | "positive" | "negative";
+  emphasis?: "hero" | "default";
 }
 
 export interface EngineRow {

@@ -62,6 +62,8 @@ export function analyticsSummaryFromDto(
   return {
     range: dto.range,
     totalTrades: dto.total_trades,
+    activeTrades: dto.active_trades,
+    closedTrades: dto.closed_trades,
     winRate: dto.win_rate,
     avgR: dto.avg_r,
     totalR: dto.total_r,

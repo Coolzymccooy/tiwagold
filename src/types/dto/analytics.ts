@@ -40,6 +40,8 @@ export interface ModeBreakdownDto {
 export interface AnalyticsSummaryDto {
   range: AnalyticsRangeDto;
   total_trades: number;
+  active_trades: number;
+  closed_trades: number;
   win_rate: number;
   avg_r: number;
   total_r: number;

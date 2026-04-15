@@ -234,6 +234,8 @@ export const COPY = {
     subtitle: "Last 30 days",
     kpis: {
       totalTrades: "Trades",
+      activeTrades: "Active",
+      closedTrades: "Closed",
       winRate: "Win rate",
       avgR: "Avg R",
       totalR: "Total R",

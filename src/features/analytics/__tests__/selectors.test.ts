@@ -8,6 +8,8 @@ function makeSummary(
   const base: AnalyticsSummary = {
     range: "30d",
     totalTrades: 10,
+    activeTrades: 3,
+    closedTrades: 7,
     winRate: 0.6,
     avgR: 0.45,
     totalR: 4.5,
