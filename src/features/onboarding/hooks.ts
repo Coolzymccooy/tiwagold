@@ -1,63 +1,76 @@
 import { useCallback, useState } from "react";
 import { useAuthStore } from "@/state/authStore";
 import {
-  ONBOARDING_STEP_COUNT,
+  ONBOARDING_SLIDE_COUNT,
   onboardingInitialState,
-  selectCanAdvance,
-  selectCurrentStepId,
-  selectIsLastStep,
+  selectCurrentSlide,
+  selectIsFirstSlide,
+  selectIsLastSlide,
   selectProgress,
 } from "./selectors";
-import type { OnboardingState, RiskProfileId } from "./types";
+import type { OnboardingSlide, OnboardingState } from "./types";
 
 export interface UseOnboardingResult {
   state: OnboardingState;
-  stepId: ReturnType<typeof selectCurrentStepId>;
-  canAdvance: boolean;
-  isLastStep: boolean;
+  currentSlide: OnboardingSlide;
+  isFirstSlide: boolean;
+  isLastSlide: boolean;
   progress: number;
-  setRiskProfile: (id: RiskProfileId) => void;
-  markBrokerConnected: () => void;
+  totalSlides: number;
   next: () => void;
   back: () => void;
+  skip: () => void;
+  finish: () => void;
+  goTo: (index: number) => void;
+}
+
+function clampIndex(index: number): number {
+  if (index < 0) return 0;
+  if (index > ONBOARDING_SLIDE_COUNT - 1) return ONBOARDING_SLIDE_COUNT - 1;
+  return index;
 }
 
 export function useOnboarding(): UseOnboardingResult {
   const [state, setState] = useState<OnboardingState>(onboardingInitialState);
   const completeOnboarding = useAuthStore((s) => s.completeOnboarding);
 
-  const setRiskProfile = useCallback((id: RiskProfileId) => {
-    setState((prev) => ({ ...prev, riskProfile: id }));
-  }, []);
-
-  const markBrokerConnected = useCallback(() => {
-    setState((prev) => ({ ...prev, brokerConnected: true }));
-  }, []);
+  const finish = useCallback(() => {
+    completeOnboarding();
+  }, [completeOnboarding]);
 
   const next = useCallback(() => {
     setState((prev) => {
-      if (!selectCanAdvance(prev)) return prev;
-      if (selectIsLastStep(prev)) {
+      if (selectIsLastSlide(prev)) {
         completeOnboarding();
         return prev;
       }
-      return { ...prev, stepIndex: Math.min(prev.stepIndex + 1, ONBOARDING_STEP_COUNT - 1) };
+      return { ...prev, slideIndex: clampIndex(prev.slideIndex + 1) };
     });
   }, [completeOnboarding]);
 
   const back = useCallback(() => {
-    setState((prev) => ({ ...prev, stepIndex: Math.max(prev.stepIndex - 1, 0) }));
+    setState((prev) => ({ ...prev, slideIndex: clampIndex(prev.slideIndex - 1) }));
+  }, []);
+
+  const skip = useCallback(() => {
+    completeOnboarding();
+  }, [completeOnboarding]);
+
+  const goTo = useCallback((index: number) => {
+    setState((prev) => ({ ...prev, slideIndex: clampIndex(index) }));
   }, []);
 
   return {
     state,
-    stepId: selectCurrentStepId(state),
-    canAdvance: selectCanAdvance(state),
-    isLastStep: selectIsLastStep(state),
+    currentSlide: selectCurrentSlide(state),
+    isFirstSlide: selectIsFirstSlide(state),
+    isLastSlide: selectIsLastSlide(state),
     progress: selectProgress(state),
-    setRiskProfile,
-    markBrokerConnected,
+    totalSlides: ONBOARDING_SLIDE_COUNT,
     next,
     back,
+    skip,
+    finish,
+    goTo,
   };
 }

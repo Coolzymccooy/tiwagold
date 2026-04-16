@@ -1,31 +1,44 @@
 import { COPY } from "@/content/copy";
-import type { OnboardingState, OnboardingStepId } from "./types";
+import type { OnboardingSlide, OnboardingSlideId, OnboardingState } from "./types";
 
-export const ONBOARDING_STEP_COUNT = COPY.onboarding.steps.length;
+export const ONBOARDING_SLIDES: readonly OnboardingSlide[] =
+  COPY.onboarding.slides.map((slide) => ({
+    id: slide.id as OnboardingSlideId,
+    eyebrow: slide.eyebrow,
+    title: slide.title,
+    body: slide.body,
+  }));
+
+export const ONBOARDING_SLIDE_COUNT = ONBOARDING_SLIDES.length;
 
 export const onboardingInitialState: OnboardingState = {
-  stepIndex: 0,
-  riskProfile: null,
-  brokerConnected: false,
+  slideIndex: 0,
 };
 
-export function selectCurrentStepId(state: OnboardingState): OnboardingStepId {
-  const step = COPY.onboarding.steps[state.stepIndex];
-  return (step?.id ?? "welcome") as OnboardingStepId;
+function clampIndex(index: number): number {
+  if (index < 0) return 0;
+  if (index > ONBOARDING_SLIDE_COUNT - 1) return ONBOARDING_SLIDE_COUNT - 1;
+  return index;
 }
 
-export function selectCanAdvance(state: OnboardingState): boolean {
-  const id = selectCurrentStepId(state);
-  if (id === "risk") return state.riskProfile !== null;
-  if (id === "broker") return state.brokerConnected;
-  return true;
+export function selectCurrentSlide(state: OnboardingState): OnboardingSlide {
+  const index = clampIndex(state.slideIndex);
+  const slide = ONBOARDING_SLIDES[index];
+  if (!slide) {
+    throw new Error("Onboarding slides are empty");
+  }
+  return slide;
 }
 
-export function selectIsLastStep(state: OnboardingState): boolean {
-  return state.stepIndex >= ONBOARDING_STEP_COUNT - 1;
+export function selectIsLastSlide(state: OnboardingState): boolean {
+  return state.slideIndex >= ONBOARDING_SLIDE_COUNT - 1;
+}
+
+export function selectIsFirstSlide(state: OnboardingState): boolean {
+  return state.slideIndex <= 0;
 }
 
 export function selectProgress(state: OnboardingState): number {
-  if (ONBOARDING_STEP_COUNT <= 1) return 1;
-  return (state.stepIndex + 1) / ONBOARDING_STEP_COUNT;
+  if (ONBOARDING_SLIDE_COUNT <= 1) return 1;
+  return (clampIndex(state.slideIndex) + 1) / ONBOARDING_SLIDE_COUNT;
 }

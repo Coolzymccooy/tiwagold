@@ -1,34 +1,22 @@
-import { useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Link } from "expo-router";
 import { GlassCard, PressableScale, Screen, Text } from "@/design/primitives";
 import { palette, radius, spacing } from "@/design/tokens";
 import { COPY } from "@/content/copy";
 import { AuthField } from "./components/AuthField";
-import { BiometricButton } from "./components/BiometricButton";
-import { useLoginForm } from "./hooks";
-import { selectEmailError, selectPasswordError } from "./selectors";
+import { useSignupForm } from "./hooks";
+import {
+  selectSignupEmailError,
+  selectSignupNameError,
+  selectSignupPasswordError,
+} from "./selectors";
 
-const SCAN_DURATION_MS = 1200;
-
-export function LoginScreen() {
-  const { state, canSubmit, setField, submit } = useLoginForm();
-  const [isScanning, setIsScanning] = useState<boolean>(false);
-  const scanTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const copy = COPY.auth.login;
-  const emailError = selectEmailError(state);
-  const passwordError = selectPasswordError(state);
-
-  const handleBiometric = useCallback(() => {
-    if (scanTimer.current) {
-      clearTimeout(scanTimer.current);
-    }
-    setIsScanning(true);
-    scanTimer.current = setTimeout(() => {
-      setIsScanning(false);
-      scanTimer.current = null;
-    }, SCAN_DURATION_MS);
-  }, []);
+export function SignupScreen() {
+  const { state, canSubmit, setField, submit } = useSignupForm();
+  const copy = COPY.auth.signup;
+  const nameError = selectSignupNameError(state);
+  const emailError = selectSignupEmailError(state);
+  const passwordError = selectSignupPasswordError(state);
 
   return (
     <Screen withKeyboardAvoid keyboardVerticalOffset={24}>
@@ -47,6 +35,17 @@ export function LoginScreen() {
 
         <GlassCard style={styles.card}>
           <View style={styles.fields}>
+            <AuthField
+              label={copy.nameLabel}
+              value={state.name}
+              onChangeText={(v) => setField("name", v)}
+              placeholder={copy.namePlaceholder}
+              autoCapitalize="words"
+              autoCorrect={false}
+              textContentType="name"
+              editable={!state.submitting}
+              error={nameError}
+            />
             <AuthField
               label={copy.emailLabel}
               value={state.email}
@@ -68,24 +67,10 @@ export function LoginScreen() {
               autoCorrect={false}
               secureTextEntry
               toggleVisibility
-              textContentType="password"
+              textContentType="newPassword"
               editable={!state.submitting}
               error={passwordError}
             />
-          </View>
-
-          <View style={styles.forgotRow}>
-            <Link href="/(auth)/forgot-password" asChild>
-              <Pressable
-                accessibilityRole="link"
-                accessibilityLabel={copy.forgotPassword}
-                hitSlop={8}
-              >
-                <Text variant="caption" tone="accent" weight="semibold">
-                  {copy.forgotPassword}
-                </Text>
-              </Pressable>
-            </Link>
           </View>
 
           {state.error ? (
@@ -110,23 +95,15 @@ export function LoginScreen() {
           </PressableScale>
         </GlassCard>
 
-        <View style={styles.biometricRow}>
-          <BiometricButton
-            onPress={handleBiometric}
-            isScanning={isScanning}
-            disabled={state.submitting}
-          />
-        </View>
-
         <View style={styles.footer}>
-          <Link href="/(auth)/signup" asChild>
+          <Link href="/(auth)/login" asChild>
             <Pressable
               accessibilityRole="link"
-              accessibilityLabel={copy.switchToSignup}
+              accessibilityLabel={copy.switchToLogin}
               hitSlop={8}
             >
               <Text variant="caption" tone="muted" align="center">
-                {copy.switchToSignup}
+                {copy.switchToLogin}
               </Text>
             </Pressable>
           </Link>
@@ -151,10 +128,6 @@ const styles = StyleSheet.create({
   fields: {
     gap: spacing.md,
   },
-  forgotRow: {
-    alignItems: "flex-end",
-    marginTop: -spacing.xs,
-  },
   formError: {
     marginTop: -spacing.sm,
   },
@@ -166,9 +139,6 @@ const styles = StyleSheet.create({
   submitDisabled: {
     backgroundColor: palette.accent.goldDeep,
     opacity: 0.6,
-  },
-  biometricRow: {
-    alignItems: "center",
   },
   footer: {
     alignItems: "center",

@@ -1,11 +1,12 @@
 import type { OnboardingState } from "../types";
 
 import {
-  ONBOARDING_STEP_COUNT,
+  ONBOARDING_SLIDE_COUNT,
+  ONBOARDING_SLIDES,
   onboardingInitialState,
-  selectCanAdvance,
-  selectCurrentStepId,
-  selectIsLastStep,
+  selectCurrentSlide,
+  selectIsFirstSlide,
+  selectIsLastSlide,
   selectProgress,
 } from "../selectors";
 
@@ -14,93 +15,89 @@ function makeState(overrides: Partial<OnboardingState> = {}): OnboardingState {
 }
 
 describe("onboarding selectors — onboardingInitialState", () => {
-  it("starts at step 0 with no risk profile and broker disconnected", () => {
-    expect(onboardingInitialState).toEqual({
-      stepIndex: 0,
-      riskProfile: null,
-      brokerConnected: false,
-    });
+  it("starts at slideIndex 0", () => {
+    expect(onboardingInitialState).toEqual({ slideIndex: 0 });
   });
 });
 
-describe("onboarding selectors — selectCurrentStepId", () => {
-  it("returns 'welcome' at stepIndex 0", () => {
-    expect(selectCurrentStepId(makeState({ stepIndex: 0 }))).toBe("welcome");
+describe("onboarding selectors — ONBOARDING_SLIDES", () => {
+  it("exposes the three MVP slides in order", () => {
+    expect(ONBOARDING_SLIDES.map((slide) => slide.id)).toEqual([
+      "engines",
+      "execution",
+      "ai",
+    ]);
   });
 
-  it("returns 'risk' at stepIndex 1", () => {
-    expect(selectCurrentStepId(makeState({ stepIndex: 1 }))).toBe("risk");
-  });
-
-  it("returns 'broker' at stepIndex 2", () => {
-    expect(selectCurrentStepId(makeState({ stepIndex: 2 }))).toBe("broker");
-  });
-
-  it("falls back to 'welcome' when stepIndex is out of range", () => {
-    expect(selectCurrentStepId(makeState({ stepIndex: 99 }))).toBe("welcome");
-  });
-});
-
-describe("onboarding selectors — selectCanAdvance", () => {
-  it("allows advancing from 'welcome' unconditionally", () => {
-    expect(selectCanAdvance(makeState({ stepIndex: 0 }))).toBe(true);
-  });
-
-  it("blocks 'risk' step until a riskProfile is set", () => {
-    expect(
-      selectCanAdvance(makeState({ stepIndex: 1, riskProfile: null })),
-    ).toBe(false);
-    expect(
-      selectCanAdvance(
-        makeState({ stepIndex: 1, riskProfile: "balanced" }),
-      ),
-    ).toBe(true);
-  });
-
-  it("blocks 'broker' step until brokerConnected is true", () => {
-    expect(
-      selectCanAdvance(
-        makeState({ stepIndex: 2, brokerConnected: false }),
-      ),
-    ).toBe(false);
-    expect(
-      selectCanAdvance(
-        makeState({ stepIndex: 2, brokerConnected: true }),
-      ),
-    ).toBe(true);
+  it("each slide carries eyebrow, title, and body copy", () => {
+    for (const slide of ONBOARDING_SLIDES) {
+      expect(slide.eyebrow.length).toBeGreaterThan(0);
+      expect(slide.title.length).toBeGreaterThan(0);
+      expect(slide.body.length).toBeGreaterThan(0);
+    }
   });
 });
 
-describe("onboarding selectors — selectIsLastStep", () => {
-  it("returns false when not on the last step", () => {
-    expect(selectIsLastStep(makeState({ stepIndex: 0 }))).toBe(false);
-    expect(selectIsLastStep(makeState({ stepIndex: 1 }))).toBe(false);
+describe("onboarding selectors — selectCurrentSlide", () => {
+  it("returns the slide at the current slideIndex", () => {
+    expect(selectCurrentSlide(makeState({ slideIndex: 0 })).id).toBe("engines");
+    expect(selectCurrentSlide(makeState({ slideIndex: 1 })).id).toBe(
+      "execution",
+    );
+    expect(selectCurrentSlide(makeState({ slideIndex: 2 })).id).toBe("ai");
   });
 
-  it("returns true when on the final step", () => {
+  it("clamps overshoot to the last slide", () => {
+    expect(selectCurrentSlide(makeState({ slideIndex: 99 })).id).toBe("ai");
+  });
+
+  it("clamps negative values to the first slide", () => {
+    expect(selectCurrentSlide(makeState({ slideIndex: -5 })).id).toBe(
+      "engines",
+    );
+  });
+});
+
+describe("onboarding selectors — selectIsFirstSlide", () => {
+  it("returns true at slideIndex 0", () => {
+    expect(selectIsFirstSlide(makeState({ slideIndex: 0 }))).toBe(true);
+  });
+
+  it("returns false after the first slide", () => {
+    expect(selectIsFirstSlide(makeState({ slideIndex: 1 }))).toBe(false);
+  });
+});
+
+describe("onboarding selectors — selectIsLastSlide", () => {
+  it("returns false when not on the last slide", () => {
+    expect(selectIsLastSlide(makeState({ slideIndex: 0 }))).toBe(false);
+    expect(selectIsLastSlide(makeState({ slideIndex: 1 }))).toBe(false);
+  });
+
+  it("returns true when on the final slide", () => {
     expect(
-      selectIsLastStep(makeState({ stepIndex: ONBOARDING_STEP_COUNT - 1 })),
+      selectIsLastSlide(makeState({ slideIndex: ONBOARDING_SLIDE_COUNT - 1 })),
     ).toBe(true);
   });
 
-  it("returns true when stepIndex overshoots", () => {
-    expect(selectIsLastStep(makeState({ stepIndex: 99 }))).toBe(true);
+  it("returns true when slideIndex overshoots", () => {
+    expect(selectIsLastSlide(makeState({ slideIndex: 99 }))).toBe(true);
   });
 });
 
 describe("onboarding selectors — selectProgress", () => {
-  it("returns fractional progress based on stepIndex", () => {
-    expect(selectProgress(makeState({ stepIndex: 0 }))).toBeCloseTo(
-      1 / ONBOARDING_STEP_COUNT,
+  it("returns fractional progress based on slideIndex", () => {
+    expect(selectProgress(makeState({ slideIndex: 0 }))).toBeCloseTo(
+      1 / ONBOARDING_SLIDE_COUNT,
     );
-    expect(selectProgress(makeState({ stepIndex: 1 }))).toBeCloseTo(
-      2 / ONBOARDING_STEP_COUNT,
+    expect(selectProgress(makeState({ slideIndex: 1 }))).toBeCloseTo(
+      2 / ONBOARDING_SLIDE_COUNT,
     );
   });
 
-  it("returns 1 on the last step", () => {
+  it("returns 1 on the last slide", () => {
     expect(
-      selectProgress(makeState({ stepIndex: ONBOARDING_STEP_COUNT - 1 })),
+      selectProgress(makeState({ slideIndex: ONBOARDING_SLIDE_COUNT - 1 })),
     ).toBe(1);
   });
 });

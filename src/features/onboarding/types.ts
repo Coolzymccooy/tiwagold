@@ -1,9 +1,12 @@
-export type OnboardingStepId = "welcome" | "risk" | "broker";
+export type OnboardingSlideId = "engines" | "execution" | "ai";
 
-export type RiskProfileId = "conservative" | "balanced" | "aggressive";
+export interface OnboardingSlide {
+  id: OnboardingSlideId;
+  eyebrow: string;
+  title: string;
+  body: string;
+}
 
 export interface OnboardingState {
-  stepIndex: number;
-  riskProfile: RiskProfileId | null;
-  brokerConnected: boolean;
+  slideIndex: number;
 }
