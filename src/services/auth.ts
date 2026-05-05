@@ -269,14 +269,32 @@ export function useSignOut(): UseMutationResult<void, Error, void> {
   });
 }
 
+const liveForgotPasswordResponseSchema = z.object({
+  accepted: z.literal(true),
+  requestId: z.string(),
+});
+
+const liveResetPasswordResponseSchema = z.object({
+  ok: z.literal(true),
+});
+
 export function useForgotPassword(): UseMutationResult<
   { accepted: true; requestId: string },
   Error,
   AuthForgotPasswordInput
 > {
   return useMutation({
-    mutationFn: () =>
-      simulateFetch(() => ({ accepted: true as const, requestId: createId("pwreq") })),
+    mutationFn: async (input) => {
+      if (isLiveBackendEnabled()) {
+        const raw = await authFetch<unknown>("/auth/forgot-password", {
+          method: "POST",
+          body: { email: input.email },
+        });
+        const parsed = liveForgotPasswordResponseSchema.parse(raw);
+        return { accepted: parsed.accepted, requestId: parsed.requestId };
+      }
+      return simulateFetch(() => ({ accepted: true as const, requestId: createId("pwreq") }));
+    },
   });
 }
 
@@ -286,6 +304,16 @@ export function useResetPassword(): UseMutationResult<
   AuthResetPasswordInput
 > {
   return useMutation({
-    mutationFn: () => simulateFetch(() => ({ accepted: true as const })),
+    mutationFn: async (input) => {
+      if (isLiveBackendEnabled()) {
+        const raw = await authFetch<unknown>("/auth/reset-password", {
+          method: "POST",
+          body: { token: input.token, newPassword: input.newPassword },
+        });
+        liveResetPasswordResponseSchema.parse(raw);
+        return { accepted: true as const };
+      }
+      return simulateFetch(() => ({ accepted: true as const }));
+    },
   });
 }
