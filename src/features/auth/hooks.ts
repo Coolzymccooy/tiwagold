@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { router } from "expo-router";
 import { useForgotPassword, useSignIn } from "@/services/auth";
 import { useAuthStore } from "@/state/authStore";
 import {
@@ -47,6 +48,7 @@ export function useLoginForm(): UseLoginFormResult {
       });
       storeSignIn(result);
       setState(loginFormInitialState);
+      router.replace("/");
     } catch (error: unknown) {
       const message =
         error instanceof Error
@@ -97,6 +99,7 @@ export function useSignupForm(): UseSignupFormResult {
         user: { ...result.user, displayName: state.name.trim() },
       });
       setState(signupFormInitialState);
+      router.replace("/");
     } catch (error: unknown) {
       const message =
         error instanceof Error
