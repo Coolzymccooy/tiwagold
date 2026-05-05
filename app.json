@@ -7,7 +7,9 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.tiwagold.app",
@@ -35,7 +37,11 @@
       },
       "USE_LIVE_BACKEND": false,
       "PERSONA_OVERSEER_BASE_URL": "",
-      "PERSONA_OVERSEER_API_KEY": ""
-    }
+      "PERSONA_OVERSEER_API_KEY": "",
+      "eas": {
+        "projectId": "63a5ce76-d497-4fc2-ab61-efd6349d314f"
+      }
+    },
+    "owner": "coolzy"
   }
 }
