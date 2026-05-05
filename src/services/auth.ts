@@ -49,6 +49,8 @@ const liveAuthResponseSchema = z.object({
   }),
   accessToken: z.string(),
   accessTokenExpiresAt: z.string(),
+  refreshToken: z.string().optional(),
+  refreshTokenExpiresAt: z.string().optional(),
 });
 
 const liveCurrentUserSchema = z.object({
@@ -81,15 +83,24 @@ function liveResponseToProfile(response: LiveAuthResponse): UserProfile {
 }
 
 function liveResponseToSession(response: LiveAuthResponse): AuthSession {
-  return {
+  const issuedAt = nowIso();
+  const session: AuthSession = {
     userId: response.user.id,
     access: {
       value: response.accessToken,
       tokenType: "Bearer",
-      issuedAt: nowIso(),
+      issuedAt,
       expiresAt: response.accessTokenExpiresAt,
     },
   };
+  if (response.refreshToken && response.refreshTokenExpiresAt) {
+    session.refresh = {
+      value: response.refreshToken,
+      issuedAt,
+      expiresAt: response.refreshTokenExpiresAt,
+    };
+  }
+  return session;
 }
 
 function buildMockSession(userId: string): AuthSession {
@@ -191,7 +202,17 @@ export function useRefreshSession(): UseMutationResult<
 > {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => simulateFetch(() => buildMockSession(MOCK_USER.id)),
+    mutationFn: async ({ refreshToken }: AuthRefreshInput) => {
+      if (isLiveBackendEnabled()) {
+        const raw = await authFetch<unknown>("/auth/refresh", {
+          method: "POST",
+          body: { refreshToken },
+        });
+        const response = liveAuthResponseSchema.parse(raw);
+        return liveResponseToSession(response);
+      }
+      return simulateFetch(() => buildMockSession(MOCK_USER.id));
+    },
     onSuccess: (session) => {
       queryClient.setQueryData(authKeys.session, session);
     },
@@ -225,7 +246,22 @@ export function useCurrentUser(enabled: boolean): UseQueryResult<UserProfile, Er
 export function useSignOut(): UseMutationResult<void, Error, void> {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => simulateFetch(() => undefined),
+    mutationFn: async () => {
+      const refreshToken = useAuthStore.getState().session?.refresh?.value;
+      if (isLiveBackendEnabled() && refreshToken) {
+        // Best-effort revoke. Mobile state is cleared either way.
+        try {
+          await authFetch<unknown>("/auth/sign-out", {
+            method: "POST",
+            body: { refreshToken },
+          });
+        } catch {
+          // Network or 4xx — proceed with local sign-out.
+        }
+        return;
+      }
+      return simulateFetch(() => undefined);
+    },
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: authKeys.me });
       queryClient.removeQueries({ queryKey: authKeys.session });
