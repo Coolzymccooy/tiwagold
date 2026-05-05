@@ -41,11 +41,11 @@ export const radius = {
 } as const;
 
 export const type = {
-  caption: { fontSize: 12, lineHeight: 16, letterSpacing: 0.4 },
-  body: { fontSize: 15, lineHeight: 21, letterSpacing: 0 },
-  title: { fontSize: 18, lineHeight: 22, letterSpacing: -0.1 },
-  headline: { fontSize: 22, lineHeight: 26, letterSpacing: -0.3 },
-  display: { fontSize: 32, lineHeight: 36, letterSpacing: -0.5 },
+  caption: { fontSize: 11, lineHeight: 15, letterSpacing: 0.3 },
+  body: { fontSize: 14, lineHeight: 20, letterSpacing: 0 },
+  title: { fontSize: 16, lineHeight: 21, letterSpacing: -0.15 },
+  headline: { fontSize: 20, lineHeight: 25, letterSpacing: -0.4 },
+  display: { fontSize: 28, lineHeight: 32, letterSpacing: -0.8 },
 } as const;
 
 export const font = {

@@ -1,5 +1,6 @@
 import { COPY } from "@/content/copy";
 import type { BrokerConnection, BrokerKind } from "@/types/broker";
+import type { Mt5StatusAccountDto } from "@/types/dto/mt5-status";
 import type { NotificationPreferences, UserProfile } from "@/types/user";
 import type {
   NotificationToggleId,
@@ -48,12 +49,28 @@ const LEGAL_ROWS: readonly SettingsLegalRow[] = [
   { id: "disclaimer", label: COPY.settings.legal.disclaimer },
 ];
 
-export function toProfileRow(user: UserProfile): SettingsProfileRow {
+export function toProfileRow(
+  user: UserProfile,
+  liveAccount?: Mt5StatusAccountDto | null,
+): SettingsProfileRow {
+  if (liveAccount && liveAccount.number) {
+    const broker = liveAccount.broker?.trim();
+    return {
+      displayName: `Account ${liveAccount.number}`,
+      email: broker ? `${broker} · ${liveAccount.server ?? "MT5"}` : "MT5 account",
+      tierLabel: "Demo profile",
+      memberSinceLabel: "Phase 3 auth pending",
+      isDemo: true,
+      demoNote: "Identity comes from your live MT5 account. Sign-in + editable profile land in Phase 3.",
+    };
+  }
   return {
     displayName: user.displayName,
     email: user.email,
     tierLabel: TIER_LABELS[user.tier],
     memberSinceLabel: formatMemberSince(user.createdAt),
+    isDemo: true,
+    demoNote: "Demo profile · sign-in + editable profile land in Phase 3.",
   };
 }
 
@@ -112,10 +129,11 @@ export function toLegalRows(): SettingsLegalRow[] {
 
 export function toSettingsView(
   user: UserProfile | undefined,
+  liveAccount?: Mt5StatusAccountDto | null,
 ): SettingsView | undefined {
   if (!user) return undefined;
   return {
-    profile: toProfileRow(user),
+    profile: toProfileRow(user, liveAccount),
     broker: toBrokerRow(user.broker),
     notifications: toNotificationRows(user.notifications),
     risk: toRiskRows(user.riskProfile),

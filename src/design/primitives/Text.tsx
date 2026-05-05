@@ -44,6 +44,8 @@ export function Text({
 }: TextProps) {
   const variantStyle = type[variant];
   const fontFamily = resolveFontFamily(family, weight);
+  const numericStyle: TextStyle | null =
+    family === "mono" ? { fontVariant: ["tabular-nums"] } : null;
   return (
     <RNText
       {...rest}
@@ -55,6 +57,7 @@ export function Text({
           fontFamily,
           textAlign: align,
         },
+        numericStyle,
         style,
       ]}
     />

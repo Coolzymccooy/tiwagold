@@ -8,10 +8,6 @@ import type { TradeFeedItem } from "../types";
 export interface TradeCardProps {
   item: TradeFeedItem;
   onPress: (tradeId: string) => void;
-  onApprove?: (tradeId: string) => void;
-  onReject?: (tradeId: string) => void;
-  isApproving?: boolean;
-  isRejecting?: boolean;
 }
 
 const STATUS_DOT_COLOR: Record<TradeFeedItem["status"], string> = {
@@ -26,20 +22,13 @@ const PNL_TONE: Record<TradeFeedItem["pnlTone"], "success" | "danger" | "muted">
   neutral: "muted",
 };
 
-export function TradeCard({
-  item,
-  onPress,
-  onApprove,
-  onReject,
-  isApproving = false,
-  isRejecting = false,
-}: TradeCardProps) {
+export function TradeCard({ item, onPress }: TradeCardProps) {
   const { trade, directionLabel, status, statusLabel } = item;
   const isBuy = directionLabel === "BUY";
   const directionColor = isBuy ? palette.status.success : palette.status.danger;
   const DirectionIcon = isBuy ? TrendingUp : TrendingDown;
 
-  const showApproveActions = status === "pending" && Boolean(onApprove && onReject);
+  const showAwaitingFill = status === "pending";
   const cardTone = item.pnlTone === "positive"
     ? "rgba(62,194,143,0.06)"
     : item.pnlTone === "negative"
@@ -140,32 +129,12 @@ export function TradeCard({
           </View>
         </View>
 
-        {showApproveActions ? (
-          <View style={styles.actionsRow}>
-            <PressableScale
-              accessibilityRole="button"
-              accessibilityLabel="Reject setup"
-              accessibilityState={{ disabled: isRejecting || isApproving }}
-              onPress={() => onReject?.(trade.id)}
-              disabled={isRejecting || isApproving}
-              style={[styles.actionBtn, styles.actionRejectBtn]}
-            >
-              <Text variant="body" weight="semibold" tone="danger">
-                {isRejecting ? "Rejecting…" : "× Reject"}
-              </Text>
-            </PressableScale>
-            <PressableScale
-              accessibilityRole="button"
-              accessibilityLabel="Approve setup"
-              accessibilityState={{ disabled: isRejecting || isApproving }}
-              onPress={() => onApprove?.(trade.id)}
-              disabled={isRejecting || isApproving}
-              style={[styles.actionBtn, styles.actionApproveBtn]}
-            >
-              <Text variant="body" weight="bold" tone="primary" align="center">
-                {isApproving ? "Approving…" : "✓ Approve"}
-              </Text>
-            </PressableScale>
+        {showAwaitingFill ? (
+          <View style={styles.awaitingFillRow}>
+            <View style={styles.awaitingFillDot} />
+            <Text variant="caption" tone="muted" weight="semibold">
+              PLACED · AWAITING FILL
+            </Text>
           </View>
         ) : null}
       </GlassCard>
@@ -261,24 +230,23 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
-  actionsRow: {
+  awaitingFillRow: {
     flexDirection: "row",
-    gap: spacing.sm,
-    paddingTop: spacing.xs,
-  },
-  actionBtn: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
     alignItems: "center",
-    justifyContent: "center",
-  },
-  actionRejectBtn: {
+    gap: spacing.xs,
+    paddingTop: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    alignSelf: "flex-start",
+    borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: palette.status.danger,
-    backgroundColor: "rgba(229,96,77,0.10)",
+    borderColor: palette.hairline,
+    backgroundColor: palette.bg.elevated,
   },
-  actionApproveBtn: {
+  awaitingFillDot: {
+    width: 6,
+    height: 6,
+    borderRadius: radius.pill,
     backgroundColor: palette.accent.gold,
   },
 });

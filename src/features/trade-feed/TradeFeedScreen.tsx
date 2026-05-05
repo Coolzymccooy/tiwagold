@@ -44,10 +44,6 @@ export function TradeFeedScreen() {
     isError,
     refetch,
     portfolio,
-    approve,
-    reject,
-    approvingTradeId,
-    rejectingTradeId,
     actionError,
   } = useTradeFeed();
 
@@ -56,17 +52,8 @@ export function TradeFeedScreen() {
   }, []);
 
   const renderItem: ListRenderItem<TradeFeedItem> = useCallback(
-    ({ item }) => (
-      <TradeCard
-        item={item}
-        onPress={handlePressTrade}
-        onApprove={approve}
-        onReject={reject}
-        isApproving={approvingTradeId === item.trade.id}
-        isRejecting={rejectingTradeId === item.trade.id}
-      />
-    ),
-    [approve, approvingTradeId, handlePressTrade, reject, rejectingTradeId],
+    ({ item }) => <TradeCard item={item} onPress={handlePressTrade} />,
+    [handlePressTrade],
   );
 
   const equityLabel = formatCurrency(portfolio.equity, portfolio.currency);

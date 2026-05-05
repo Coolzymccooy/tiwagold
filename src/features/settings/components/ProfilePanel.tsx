@@ -33,12 +33,17 @@ export function ProfilePanel({ profile }: ProfilePanelProps) {
       </View>
       <View style={styles.metaRow}>
         <Text variant="caption" tone="muted">
-          Member since
+          {profile.isDemo ? "Status" : "Member since"}
         </Text>
         <Text variant="caption" weight="medium">
           {profile.memberSinceLabel}
         </Text>
       </View>
+      {profile.demoNote ? (
+        <Text variant="caption" tone="subtle">
+          {profile.demoNote}
+        </Text>
+      ) : null}
     </View>
   );
 }

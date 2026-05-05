@@ -74,6 +74,30 @@ describe("settings selectors — toProfileRow", () => {
     expect(row.memberSinceLabel).not.toBe("—");
     expect(row.memberSinceLabel.length).toBeGreaterThan(0);
   });
+
+  it("flags the profile as demo with a Phase 3 note when no live MT5 account is supplied", () => {
+    const row = toProfileRow(makeUser());
+    expect(row.isDemo).toBe(true);
+    expect(row.demoNote).toContain("Phase 3");
+  });
+
+  it("overlays the live MT5 account number + broker into the profile row", () => {
+    const row = toProfileRow(makeUser(), {
+      number: "52812281",
+      broker: "Raw Trading Ltd",
+      server: "ICMarketsSC-Demo",
+      balance: 100,
+      equity: 100,
+      openPositions: 0,
+      connectedToBroker: true,
+    });
+    expect(row.displayName).toBe("Account 52812281");
+    expect(row.email).toBe("Raw Trading Ltd · ICMarketsSC-Demo");
+    expect(row.tierLabel).toBe("Demo profile");
+    expect(row.memberSinceLabel).toBe("Phase 3 auth pending");
+    expect(row.isDemo).toBe(true);
+    expect(row.demoNote).toMatch(/Phase 3/);
+  });
 });
 
 describe("settings selectors — toBrokerRow", () => {

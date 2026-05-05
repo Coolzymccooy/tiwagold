@@ -6,6 +6,8 @@ export interface SettingsProfileRow {
   email: string;
   tierLabel: string;
   memberSinceLabel: string;
+  isDemo: boolean;
+  demoNote: string | null;
 }
 
 export interface SettingsBrokerRow {

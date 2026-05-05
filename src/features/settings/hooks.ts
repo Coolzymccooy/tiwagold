@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useCurrentUser, useSignOut } from "@/services/auth";
+import { useMt5Status } from "@/services/mt5Status";
 import { useAuthStore } from "@/state/authStore";
 import { toSettingsView } from "./selectors";
 import type { SettingsView } from "./types";
@@ -16,8 +17,12 @@ export interface UseSettingsResult {
 export function useSettings(): UseSettingsResult {
   const session = useAuthStore((state) => state.session);
   const query = useCurrentUser(Boolean(session));
+  const mt5 = useMt5Status();
 
-  const view = useMemo(() => toSettingsView(query.data), [query.data]);
+  const view = useMemo(
+    () => toSettingsView(query.data, mt5.data?.account ?? null),
+    [query.data, mt5.data],
+  );
 
   const refetch = useCallback(() => {
     void query.refetch();
