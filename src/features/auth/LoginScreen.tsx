@@ -1,34 +1,17 @@
-import { useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Link } from "expo-router";
 import { GlassCard, PressableScale, Screen, Text } from "@/design/primitives";
 import { palette, radius, spacing } from "@/design/tokens";
 import { COPY } from "@/content/copy";
 import { AuthField } from "./components/AuthField";
-import { BiometricButton } from "./components/BiometricButton";
 import { useLoginForm } from "./hooks";
 import { selectEmailError, selectPasswordError } from "./selectors";
 
-const SCAN_DURATION_MS = 1200;
-
 export function LoginScreen() {
   const { state, canSubmit, setField, submit } = useLoginForm();
-  const [isScanning, setIsScanning] = useState<boolean>(false);
-  const scanTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copy = COPY.auth.login;
   const emailError = selectEmailError(state);
   const passwordError = selectPasswordError(state);
-
-  const handleBiometric = useCallback(() => {
-    if (scanTimer.current) {
-      clearTimeout(scanTimer.current);
-    }
-    setIsScanning(true);
-    scanTimer.current = setTimeout(() => {
-      setIsScanning(false);
-      scanTimer.current = null;
-    }, SCAN_DURATION_MS);
-  }, []);
 
   return (
     <Screen withKeyboardAvoid keyboardVerticalOffset={24}>
@@ -110,14 +93,6 @@ export function LoginScreen() {
           </PressableScale>
         </GlassCard>
 
-        <View style={styles.biometricRow}>
-          <BiometricButton
-            onPress={handleBiometric}
-            isScanning={isScanning}
-            disabled={state.submitting}
-          />
-        </View>
-
         <View style={styles.footer}>
           <Link href="/(auth)/signup" asChild>
             <Pressable
@@ -153,7 +128,7 @@ const styles = StyleSheet.create({
   },
   forgotRow: {
     alignItems: "flex-end",
-    marginTop: -spacing.xs,
+    marginTop: spacing.xs,
   },
   formError: {
     marginTop: -spacing.sm,
@@ -166,9 +141,6 @@ const styles = StyleSheet.create({
   submitDisabled: {
     backgroundColor: palette.accent.goldDeep,
     opacity: 0.6,
-  },
-  biometricRow: {
-    alignItems: "center",
   },
   footer: {
     alignItems: "center",
