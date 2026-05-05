@@ -7,13 +7,23 @@ import { z } from "zod";
  * Authoritative source — keep this in sync when the backend route shape changes.
  */
 
+export const journalExecutionStateSchema = z.enum([
+  "awaiting_placement",
+  "placed",
+  "filled",
+  "closed",
+]);
+
 export const journalTradeRowSchema = z.object({
   id: z.string(),
   direction: z.enum(["BUY", "SELL"]),
   setupType: z.string().nullable().optional(),
   state: z.string(),
+  executionState: journalExecutionStateSchema.optional(),
+  brokerTicket: z.string().nullable().optional(),
   session: z.string().nullable().optional(),
   entry: z.number(),
+  actualEntry: z.number().nullable().optional(),
   stopLoss: z.number(),
   tp1: z.number(),
   tp2: z.number(),
@@ -66,6 +76,7 @@ export const journalDtoSchema = z.object({
   ruleBreaks: z.number().optional(),
 });
 
+export type JournalExecutionStateDto = z.infer<typeof journalExecutionStateSchema>;
 export type JournalTradeRowDto = z.infer<typeof journalTradeRowSchema>;
 export type JournalEquityPointDto = z.infer<typeof journalEquityPointSchema>;
 export type JournalSessionBreakdownEntryDto = z.infer<

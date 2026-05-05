@@ -19,6 +19,7 @@ export { mt5StatusKeys, useMt5Status } from "./mt5Status";
 export {
   authKeys,
   useSignIn,
+  useSignUp,
   useAuthSession,
   useRefreshSession,
   useCurrentUser,
@@ -26,7 +27,7 @@ export {
   useForgotPassword,
   useResetPassword,
 } from "./auth";
-export type { SignInInput } from "./auth";
+export type { SignInInput, SignUpInput } from "./auth";
 
 export {
   tradeKeys,

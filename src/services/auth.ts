@@ -5,7 +5,9 @@ import {
   type UseMutationResult,
   type UseQueryResult,
 } from "@tanstack/react-query";
+import { z } from "zod";
 import { MOCK_USER } from "@/mocks/user";
+import { useAuthStore, selectAccessToken } from "@/state/authStore";
 import type {
   AuthForgotPasswordInput,
   AuthRefreshInput,
@@ -14,6 +16,7 @@ import type {
 } from "@/types/auth";
 import type { UserProfile } from "@/types/user";
 import { createId, nowIso, simulateFetch } from "./client";
+import { authFetch, isLiveBackendEnabled } from "./liveBackend";
 
 export const authKeys = {
   me: ["user", "me"] as const,
@@ -25,10 +28,71 @@ export interface SignInInput {
   password: string;
 }
 
+export interface SignUpInput {
+  email: string;
+  password: string;
+  displayName: string;
+}
+
 const ACCESS_TTL_MS = 1000 * 60 * 15;
 const REFRESH_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 
-function buildSession(userId: string): AuthSession {
+const liveTierSchema = z.enum(["trial", "pro", "founder"]);
+
+const liveAuthResponseSchema = z.object({
+  user: z.object({
+    id: z.string(),
+    email: z.string(),
+    displayName: z.string(),
+    tier: liveTierSchema,
+    createdAt: z.string(),
+  }),
+  accessToken: z.string(),
+  accessTokenExpiresAt: z.string(),
+});
+
+const liveCurrentUserSchema = z.object({
+  user: z.object({
+    id: z.string(),
+    email: z.string(),
+    displayName: z.string(),
+    tier: liveTierSchema,
+    createdAt: z.string(),
+  }),
+});
+
+type LiveAuthResponse = z.infer<typeof liveAuthResponseSchema>;
+
+function liveResponseToProfile(response: LiveAuthResponse): UserProfile {
+  return {
+    id: response.user.id,
+    email: response.user.email,
+    displayName: response.user.displayName,
+    tier: response.user.tier,
+    createdAt: response.user.createdAt,
+    notifications: {
+      signalAlerts: true,
+      riskBlocks: true,
+      dailyRecap: true,
+      macroRadar: false,
+    },
+    riskProfile: "balanced",
+  };
+}
+
+function liveResponseToSession(response: LiveAuthResponse): AuthSession {
+  return {
+    userId: response.user.id,
+    access: {
+      value: response.accessToken,
+      tokenType: "Bearer",
+      issuedAt: nowIso(),
+      expiresAt: response.accessTokenExpiresAt,
+    },
+  };
+}
+
+function buildMockSession(userId: string): AuthSession {
   const issuedAt = nowIso();
   const accessExpiresAt = new Date(Date.now() + ACCESS_TTL_MS).toISOString();
   const refreshExpiresAt = new Date(Date.now() + REFRESH_TTL_MS).toISOString();
@@ -56,11 +120,53 @@ export function useSignIn(): UseMutationResult<
 > {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ email }: SignInInput) =>
-      simulateFetch(() => ({
-        session: buildSession(MOCK_USER.id),
+    mutationFn: async ({ email, password }: SignInInput) => {
+      if (isLiveBackendEnabled()) {
+        const raw = await authFetch<unknown>("/auth/sign-in", {
+          method: "POST",
+          body: { email, password },
+        });
+        const response = liveAuthResponseSchema.parse(raw);
+        return {
+          session: liveResponseToSession(response),
+          user: liveResponseToProfile(response),
+        };
+      }
+      return simulateFetch(() => ({
+        session: buildMockSession(MOCK_USER.id),
         user: { ...MOCK_USER, email: email || MOCK_USER.email },
-      })),
+      }));
+    },
+    onSuccess: ({ user }) => {
+      queryClient.setQueryData(authKeys.me, user);
+    },
+  });
+}
+
+export function useSignUp(): UseMutationResult<
+  { session: AuthSession; user: UserProfile },
+  Error,
+  SignUpInput
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ email, password, displayName }: SignUpInput) => {
+      if (isLiveBackendEnabled()) {
+        const raw = await authFetch<unknown>("/auth/sign-up", {
+          method: "POST",
+          body: { email, password, displayName },
+        });
+        const response = liveAuthResponseSchema.parse(raw);
+        return {
+          session: liveResponseToSession(response),
+          user: liveResponseToProfile(response),
+        };
+      }
+      return simulateFetch(() => ({
+        session: buildMockSession(MOCK_USER.id),
+        user: { ...MOCK_USER, email: email || MOCK_USER.email, displayName },
+      }));
+    },
     onSuccess: ({ user }) => {
       queryClient.setQueryData(authKeys.me, user);
     },
@@ -72,7 +178,7 @@ export function useAuthSession(
 ): UseQueryResult<AuthSession | null, Error> {
   return useQuery({
     queryKey: authKeys.session,
-    queryFn: () => simulateFetch(() => buildSession(MOCK_USER.id)),
+    queryFn: () => simulateFetch(() => buildMockSession(MOCK_USER.id)),
     enabled,
     staleTime: 60_000,
   });
@@ -85,7 +191,7 @@ export function useRefreshSession(): UseMutationResult<
 > {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => simulateFetch(() => buildSession(MOCK_USER.id)),
+    mutationFn: () => simulateFetch(() => buildMockSession(MOCK_USER.id)),
     onSuccess: (session) => {
       queryClient.setQueryData(authKeys.session, session);
     },
@@ -93,9 +199,24 @@ export function useRefreshSession(): UseMutationResult<
 }
 
 export function useCurrentUser(enabled: boolean): UseQueryResult<UserProfile, Error> {
+  const accessToken = useAuthStore(selectAccessToken)?.value ?? null;
   return useQuery({
     queryKey: authKeys.me,
-    queryFn: () => simulateFetch(() => MOCK_USER),
+    queryFn: async () => {
+      if (isLiveBackendEnabled() && accessToken) {
+        const raw = await authFetch<unknown>("/users/me", {
+          method: "GET",
+          bearerToken: accessToken,
+        });
+        const parsed = liveCurrentUserSchema.parse(raw);
+        return liveResponseToProfile({
+          user: parsed.user,
+          accessToken: "",
+          accessTokenExpiresAt: "",
+        });
+      }
+      return simulateFetch(() => MOCK_USER);
+    },
     enabled,
     staleTime: 60_000,
   });

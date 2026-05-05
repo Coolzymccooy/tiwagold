@@ -1,4 +1,10 @@
-import type { EngineTier, SessionName, Trade, TradeOrderRouting } from "@/types/trade";
+import type {
+  EngineTier,
+  SessionName,
+  Trade,
+  TradeExecutionState,
+  TradeOrderRouting,
+} from "@/types/trade";
 import type { TradeFeedCounts, TradeFeedFilter, TradeFeedItem, TradeFeedStatus } from "./types";
 
 const ACTIVE_STATUSES: readonly Trade["status"][] = ["executed", "approved"];
@@ -92,9 +98,24 @@ function resolveStatusLabel(status: TradeFeedStatus): string {
   return "CLOSED";
 }
 
+function resolveExecutionLabel(
+  state: TradeExecutionState | undefined,
+  brokerTicket: string | null | undefined,
+): string | null {
+  if (!state || state === "closed") return null;
+  if (state === "filled") return null;
+  if (state === "placed") {
+    return brokerTicket
+      ? `PLACED · AWAITING FILL · #${brokerTicket}`
+      : "PLACED · AWAITING FILL";
+  }
+  return "AWAITING PLACEMENT";
+}
+
 export function toTradeFeedItem(trade: Trade): TradeFeedItem {
   const status = resolveStatus(trade);
   const isPending = status === "pending";
+  const executionState = trade.executionState ?? null;
   return {
     trade,
     directionLabel: trade.direction,
@@ -112,6 +133,8 @@ export function toTradeFeedItem(trade: Trade): TradeFeedItem {
     pnlTone: resolvePnlTone(status, trade.currentPnlUsd),
     status,
     statusLabel: resolveStatusLabel(status),
+    executionState,
+    executionLabel: resolveExecutionLabel(executionState ?? undefined, trade.brokerTicket),
     isActive: status === "open",
     isPending: status === "pending",
     isClosed: status === "closed",

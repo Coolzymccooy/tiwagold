@@ -105,6 +105,12 @@ export type CandidateStatus =
 
 export type TradeOrderRouting = "MARKET" | "LIMIT";
 
+export type TradeExecutionState =
+  | "awaiting_placement"
+  | "placed"
+  | "filled"
+  | "closed";
+
 export interface TradeCandidate {
   id: string;
   dedupeKey: string;
@@ -131,6 +137,7 @@ export interface TradeCandidate {
   createdAt: string;
   updatedAt: string;
   status: CandidateStatus;
+  executionState?: TradeExecutionState;
   brokerTicket?: string | null;
   actualEntry?: number | null;
   currentPrice?: number;

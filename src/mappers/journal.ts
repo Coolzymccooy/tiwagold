@@ -172,6 +172,9 @@ export function journalRowToTrade(row: JournalTradeRowDto): Trade {
     createdAt: row.createdAt,
     updatedAt,
     status,
+    executionState: row.executionState,
+    brokerTicket: row.brokerTicket ?? null,
+    actualEntry: row.actualEntry ?? null,
     timeline: buildTimeline(row),
     autopsy: autopsyFromRow(row),
   };

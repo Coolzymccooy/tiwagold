@@ -118,3 +118,54 @@ async function safeJson(res: Response): Promise<unknown> {
     return undefined;
   }
 }
+
+export interface AuthFetchOptions {
+  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  body?: unknown;
+  bearerToken?: string | null;
+  fetchImpl?: typeof fetch;
+  signal?: AbortSignal;
+}
+
+/**
+ * Auth-realm fetch. Hits the same `PERSONA_OVERSEER_BASE_URL` host but does
+ * NOT send `x-api-key` or `x-tiwa-device-token` — those gate /trading/*
+ * (Path B). Auth routes are public; /users/me uses a Bearer access token.
+ */
+export async function authFetch<T>(
+  path: string,
+  options: AuthFetchOptions = {},
+): Promise<T> {
+  const config = readLiveBackendConfig();
+  if (!config.enabled) throw new LiveBackendDisabledError();
+  if (!config.baseUrl) throw new LiveBackendUnconfiguredError("PERSONA_OVERSEER_BASE_URL");
+
+  const url = path.startsWith("http") ? path : `${config.baseUrl}${path}`;
+  const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  const method = options.method ?? "GET";
+  const headers: Record<string, string> = { accept: "application/json" };
+  if (options.body !== undefined) {
+    headers["content-type"] = "application/json";
+  }
+  if (options.bearerToken && options.bearerToken.length > 0) {
+    headers.authorization = `Bearer ${options.bearerToken}`;
+  }
+
+  const response = await fetchImpl(url, {
+    method,
+    headers,
+    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    signal: options.signal,
+  });
+
+  if (!response.ok) {
+    const body = await safeJson(response);
+    throw new LiveBackendHttpError(
+      response.status,
+      `Auth backend ${response.status} on ${path}`,
+      body,
+    );
+  }
+
+  return (await response.json()) as T;
+}

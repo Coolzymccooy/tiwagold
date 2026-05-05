@@ -101,7 +101,9 @@ export function isAccessExpired(state: AuthStore, nowMs: number = Date.now()): b
 }
 
 export function isRefreshExpired(state: AuthStore, nowMs: number = Date.now()): boolean {
-  const expiresAt = parseExpiry(state.session?.refresh.expiresAt);
+  const refresh = state.session?.refresh;
+  if (!refresh) return true;
+  const expiresAt = parseExpiry(refresh.expiresAt);
   if (expiresAt === null) return true;
   return nowMs >= expiresAt;
 }

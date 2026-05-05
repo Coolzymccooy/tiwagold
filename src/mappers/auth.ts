@@ -65,7 +65,7 @@ export function authSessionFromDto(dto: AuthSessionDto): AuthSession {
   return {
     userId: dto.user_id,
     access: accessTokenFromDto(dto.access),
-    refresh: refreshTokenFromDto(dto.refresh),
+    refresh: dto.refresh ? refreshTokenFromDto(dto.refresh) : undefined,
     scope: dto.scope,
   };
 }
@@ -74,7 +74,7 @@ export function authSessionToDto(domain: AuthSession): AuthSessionDto {
   return {
     user_id: domain.userId,
     access: accessTokenToDto(domain.access),
-    refresh: refreshTokenToDto(domain.refresh),
+    refresh: domain.refresh ? refreshTokenToDto(domain.refresh) : undefined,
     scope: domain.scope,
   };
 }

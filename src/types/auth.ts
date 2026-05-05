@@ -16,7 +16,7 @@ export interface RefreshToken {
 export interface AuthSession {
   userId: string;
   access: AccessToken;
-  refresh: RefreshToken;
+  refresh?: RefreshToken;
   scope?: string[];
 }
 

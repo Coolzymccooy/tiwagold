@@ -14,7 +14,7 @@ export interface RefreshTokenDto {
 export interface AuthSessionDto {
   user_id: string;
   access: AuthTokenDto;
-  refresh: RefreshTokenDto;
+  refresh?: RefreshTokenDto;
   scope?: string[];
 }
 

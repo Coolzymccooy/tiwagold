@@ -2,6 +2,7 @@ import type {
   Trade,
   TradeDirection,
   EngineTier,
+  TradeExecutionState,
   TradeOrderRouting,
 } from "@/types/trade";
 
@@ -26,6 +27,8 @@ export interface TradeFeedItem {
   pnlTone: "positive" | "negative" | "neutral";
   status: TradeFeedStatus;
   statusLabel: string;
+  executionState: TradeExecutionState | null;
+  executionLabel: string | null;
   isActive: boolean;
   isPending: boolean;
   isClosed: boolean;

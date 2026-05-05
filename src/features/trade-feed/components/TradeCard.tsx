@@ -28,7 +28,8 @@ export function TradeCard({ item, onPress }: TradeCardProps) {
   const directionColor = isBuy ? palette.status.success : palette.status.danger;
   const DirectionIcon = isBuy ? TrendingUp : TrendingDown;
 
-  const showAwaitingFill = status === "pending";
+  const showExecutionPill =
+    status === "pending" && Boolean(item.executionLabel);
   const cardTone = item.pnlTone === "positive"
     ? "rgba(62,194,143,0.06)"
     : item.pnlTone === "negative"
@@ -129,11 +130,11 @@ export function TradeCard({ item, onPress }: TradeCardProps) {
           </View>
         </View>
 
-        {showAwaitingFill ? (
+        {showExecutionPill ? (
           <View style={styles.awaitingFillRow}>
             <View style={styles.awaitingFillDot} />
-            <Text variant="caption" tone="muted" weight="semibold">
-              PLACED · AWAITING FILL
+            <Text variant="caption" tone="muted" weight="semibold" numberOfLines={1}>
+              {item.executionLabel}
             </Text>
           </View>
         ) : null}
