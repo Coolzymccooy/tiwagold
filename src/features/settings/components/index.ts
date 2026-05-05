@@ -1,6 +1,10 @@
 export { SectionCard } from "./SectionCard";
 export { ProfilePanel } from "./ProfilePanel";
 export { BrokerPanel } from "./BrokerPanel";
+export { MT5ConnectCard } from "./MT5ConnectCard";
+export { BridgeStatusCard } from "./BridgeStatusCard";
+export { RiskManagementCard } from "./RiskManagementCard";
+export { ActiveEnginesCard } from "./ActiveEnginesCard";
 export { NotificationToggleRow } from "./NotificationToggleRow";
 export { RiskOptionRow } from "./RiskOptionRow";
 export { LegalRow } from "./LegalRow";

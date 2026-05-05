@@ -7,7 +7,7 @@ export type TradeStatusDto =
   | "closed"
   | "cancelled"
   | "rejected";
-export type EngineTierDto = "conservative" | "aggressive" | "sniper";
+export type EngineTierDto = "conservative" | "aggressive";
 export type SessionNameDto = "asia" | "london" | "new_york" | "overlap";
 export type TradeModeDto = "scalp" | "intraday" | "swing";
 export type CandidateStatusDto =

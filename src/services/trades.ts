@@ -6,17 +6,34 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { MOCK_TRADES, findMockTrade } from "@/mocks/trades";
+import { journalToTrades } from "@/mappers/journal";
 import type {
   ApproveTradeInput,
   ExecuteTradeInput,
 } from "@/mappers/trades";
+import { parseJournalDto } from "@/types/dto/journal";
 import type {
   CandidateStatus,
   ExecutionStatus,
   Trade,
 } from "@/types/trade";
 import { nowIso, simulateFetch } from "./client";
+import { isLiveBackendEnabled, liveFetch } from "./liveBackend";
 import { assertSignedIntentInProduction } from "./signedIntent";
+
+const JOURNAL_PATH = "/trading/journal";
+
+async function fetchTradesLive(): Promise<Trade[]> {
+  const raw = await liveFetch<unknown>(JOURNAL_PATH);
+  return journalToTrades(parseJournalDto(raw));
+}
+
+async function fetchTradeLive(id: string): Promise<Trade> {
+  const trades = await fetchTradesLive();
+  const trade = trades.find((t) => t.id === id);
+  if (!trade) throw new Error("Trade not found");
+  return trade;
+}
 
 export const tradeKeys = {
   all: ["trades"] as const,
@@ -28,7 +45,8 @@ export const tradeKeys = {
 export function useTrades(): UseQueryResult<Trade[], Error> {
   return useQuery({
     queryKey: tradeKeys.all,
-    queryFn: () => simulateFetch(() => MOCK_TRADES),
+    queryFn: () =>
+      isLiveBackendEnabled() ? fetchTradesLive() : simulateFetch(() => MOCK_TRADES),
     staleTime: 10_000,
   });
 }
@@ -36,13 +54,15 @@ export function useTrades(): UseQueryResult<Trade[], Error> {
 export function useTrade(id: string | undefined): UseQueryResult<Trade, Error> {
   return useQuery({
     queryKey: id ? tradeKeys.detail(id) : ["trade", "pending"],
-    queryFn: () =>
-      simulateFetch(() => {
-        if (!id) throw new Error("Missing trade id");
+    queryFn: () => {
+      if (!id) throw new Error("Missing trade id");
+      if (isLiveBackendEnabled()) return fetchTradeLive(id);
+      return simulateFetch(() => {
         const trade = findMockTrade(id);
         if (!trade) throw new Error("Trade not found");
         return trade;
-      }),
+      });
+    },
     enabled: Boolean(id),
     staleTime: 10_000,
   });

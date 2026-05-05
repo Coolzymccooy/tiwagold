@@ -1,0 +1,16 @@
+appId: host.exp.exponent
+name: Tiwa Gold - App boots and renders home
+tags:
+  - smoke
+---
+- launchApp:
+    appId: host.exp.exponent
+    clearState: false
+- runFlow:
+    when:
+      visible: "Tiwa Gold"
+    file: helpers/open-tiwa-gold.yaml
+- extendedWaitUntil:
+    visible: "Live setups"
+    timeout: 30000
+- assertVisible: "Macro radar"

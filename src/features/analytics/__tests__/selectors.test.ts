@@ -123,12 +123,12 @@ describe("analytics selectors — KPIs", () => {
 });
 
 describe("analytics selectors — breakdowns", () => {
-  it("maps engine rows with known labels and passthrough for unknown", () => {
+  it("maps engine rows with known labels", () => {
     const view = toAnalyticsView(
       makeSummary({
         byEngine: [
           { engine: "conservative", trades: 5, winRate: 0.6, avgR: 0.3 },
-          { engine: "sniper", trades: 2, winRate: 1, avgR: 1.5 },
+          { engine: "aggressive", trades: 2, winRate: 1, avgR: 1.5 },
         ],
       }),
     );
@@ -139,7 +139,7 @@ describe("analytics selectors — breakdowns", () => {
       winRateLabel: "60%",
       avgRLabel: "+0.30R",
     });
-    expect(engines[1]?.engineLabel).toBe("Sniper");
+    expect(engines[1]?.engineLabel).toBe("Aggressive");
     expect(engines[1]?.avgRLabel).toBe("+1.50R");
   });
 

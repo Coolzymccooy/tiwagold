@@ -42,7 +42,7 @@ export function EquitySparklineCard({
         <Text variant="caption" tone="muted" weight="semibold">
           {title.toUpperCase()}
         </Text>
-        <Text variant="title" weight="bold" tone={changeTone}>
+        <Text variant="title" weight="bold" tone={changeTone} family="mono">
           {changeRLabel}
         </Text>
       </View>
@@ -98,7 +98,7 @@ function LegendCell({ label, value, align = "left" }: LegendCellProps) {
       <Text variant="caption" tone="subtle" weight="semibold">
         {label.toUpperCase()}
       </Text>
-      <Text variant="body" weight="semibold" tone="primary">
+      <Text variant="body" weight="semibold" tone="primary" family="mono">
         {value}
       </Text>
     </View>

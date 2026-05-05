@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { Eye, EyeOff } from "lucide-react-native";
 import { Text } from "@/design/primitives";
-import { palette, radius, spacing, type as typeTokens } from "@/design/tokens";
+import { font, palette, radius, spacing, type as typeTokens } from "@/design/tokens";
 import { COPY } from "@/content/copy";
 
 export interface AuthFieldProps extends Omit<TextInputProps, "style"> {
@@ -88,6 +88,7 @@ const styles = StyleSheet.create({
     borderColor: palette.hairline,
     backgroundColor: palette.bg.elevated,
     color: palette.fg.primary,
+    fontFamily: font.sansWeights.medium,
     fontSize: typeTokens.body.fontSize,
     lineHeight: typeTokens.body.lineHeight,
   },

@@ -3,7 +3,7 @@ import { StyleSheet, TextInput, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { PressableScale } from "@/design/primitives/PressableScale";
 import { Text } from "@/design/primitives/Text";
-import { palette, radius, spacing } from "@/design/tokens";
+import { font, palette, radius, spacing } from "@/design/tokens";
 import { COPY } from "@/content/copy";
 
 export interface ComposerProps {
@@ -81,6 +81,7 @@ const styles = StyleSheet.create({
     borderColor: palette.hairline,
     backgroundColor: palette.bg.base,
     color: palette.fg.primary,
+    fontFamily: font.sansWeights.regular,
     fontSize: 15,
     lineHeight: 22,
   },

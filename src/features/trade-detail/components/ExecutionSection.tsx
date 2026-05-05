@@ -143,7 +143,7 @@ function ExecutionBody({ isLoading, isError, status }: ExecutionBodyProps) {
             <Text variant="caption" tone="subtle">
               {cell.label}
             </Text>
-            <Text variant="title" weight="semibold">
+            <Text variant="body" weight="semibold">
               {cell.value}
             </Text>
           </View>
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   cell: {
-    flexBasis: "30%",
+    flexBasis: "47%",
     flexGrow: 1,
     gap: spacing.xs,
   },

@@ -16,7 +16,7 @@ const messages: CopilotMessage[] = [
   {
     id: "msg_user_1",
     role: "user",
-    content: "Walk me through the logic on the Sniper setup queued for Asian session.",
+    content: "Walk me through the logic on the aggressive setup queued for Asian session.",
     at: "2026-04-14T00:51:12.000Z",
     status: "complete",
   },
@@ -24,7 +24,7 @@ const messages: CopilotMessage[] = [
     id: "msg_assistant_1",
     role: "assistant",
     content:
-      "trd_3 is a sniper-tier long at 2320.00. HTF trend on 4H is up; Asian session just finished a textbook accumulation — range compressed into the upper third, OB at 2314–2318 held twice. Score 95 reflects trend + structure + clean invalidation at 2310. Risk is 1R = 10 points; TP1 at 2340 gives 2R.",
+      "trd_3 is a high-conviction aggressive long at 2320.00. HTF trend on 4H is up; Asian session just finished a textbook accumulation — range compressed into the upper third, OB at 2314–2318 held twice. Score 95 reflects trend + structure + clean invalidation at 2310. Risk is 1R = 10 points; TP1 at 2340 gives 2R.",
     at: "2026-04-14T00:51:35.000Z",
     status: "complete",
     citations: [{ label: "trd_3 setup", tradeId: "trd_3" }],
@@ -33,7 +33,7 @@ const messages: CopilotMessage[] = [
 
 export const MOCK_COPILOT_SESSION: CopilotSession = {
   id: "cps_session_1",
-  title: "Asian session sniper review",
+  title: "Asian session high-conviction review",
   createdAt: "2026-04-14T00:50:00.000Z",
   updatedAt: "2026-04-14T00:51:35.000Z",
   messages,

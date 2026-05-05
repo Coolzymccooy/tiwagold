@@ -1,13 +1,18 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { GlassCard, PressableScale, Screen, Text } from "@/design/primitives";
 import { palette, radius, spacing } from "@/design/tokens";
 import { COPY } from "@/content/copy";
+import { useBrokerConnections } from "@/services/broker";
+import type { BrokerConnection } from "@/types/broker";
 import {
-  BrokerPanel,
+  ActiveEnginesCard,
+  BridgeStatusCard,
   LegalRow,
+  MT5ConnectCard,
   NotificationToggleRow,
   ProfilePanel,
+  RiskManagementCard,
   RiskOptionRow,
   SectionCard,
   SignOutButton,
@@ -22,6 +27,12 @@ import type {
 export function SettingsScreen() {
   const { view, isLoading, isError, refetch } = useSettings();
   const { signOut, isSigningOut } = useSignOutAction();
+  const brokers = useBrokerConnections();
+
+  const mt5Connection = useMemo<BrokerConnection | undefined>(
+    () => brokers.data?.find((c) => c.kind === "mt5"),
+    [brokers.data],
+  );
 
   const handleToggle = useCallback(
     (_id: NotificationToggleId, _next: boolean) => {
@@ -36,14 +47,6 @@ export function SettingsScreen() {
 
   const handleLegalPress = useCallback((_id: LegalLinkId) => {
     // legal links route via expo-linking in a later phase
-  }, []);
-
-  const handleConnect = useCallback(() => {
-    // broker connect flow wired in a later phase
-  }, []);
-
-  const handleDisconnect = useCallback(() => {
-    // broker disconnect flow wired in a later phase
   }, []);
 
   if (isLoading) {
@@ -90,22 +93,22 @@ export function SettingsScreen() {
           <Text variant="headline" weight="bold">
             {COPY.settings.title}
           </Text>
+          <Text variant="caption" tone="muted">
+            Profile, brokers, and engines that drive your feed
+          </Text>
         </View>
 
         <SectionCard title={COPY.settings.sections.profile}>
           <ProfilePanel profile={view.profile} />
         </SectionCard>
 
-        <SectionCard title={COPY.settings.sections.broker}>
-          <BrokerPanel
-            broker={view.broker}
-            connectLabel={COPY.settings.broker.connect}
-            disconnectLabel={COPY.settings.broker.disconnect}
-            lastSyncedLabel={COPY.settings.broker.lastSynced}
-            onConnect={handleConnect}
-            onDisconnect={handleDisconnect}
-          />
-        </SectionCard>
+        <BridgeStatusCard />
+
+        <MT5ConnectCard connection={mt5Connection} />
+
+        <RiskManagementCard />
+
+        <ActiveEnginesCard />
 
         <SectionCard title={COPY.settings.sections.risk}>
           {view.risk.map((row) => (
@@ -147,7 +150,7 @@ export function SettingsScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     gap: spacing.lg,
-    paddingVertical: spacing.xl,
+    paddingTop: spacing.xl,
     paddingBottom: spacing["3xl"],
   },
   header: {

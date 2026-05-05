@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { PressableScale } from "@/design/primitives/PressableScale";
 import { Text } from "@/design/primitives/Text";
@@ -19,38 +19,32 @@ export function PromptChipList({ prompts, onSelect }: PromptChipListProps) {
   };
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.container}
-    >
+    <View style={styles.container}>
       {prompts.map((prompt) => (
         <PressableScale
           key={`${prompt.kind}-${prompt.label}`}
           onPress={() => handleSelect(prompt.prompt)}
           accessibilityRole="button"
           accessibilityLabel={prompt.label}
-          style={styles.chipShell}
         >
           <View style={styles.chip}>
-            <Text variant="caption" tone="accent" weight="semibold">
+            <Text variant="caption" tone="accent" weight="semibold" numberOfLines={1}>
               {prompt.label}
             </Text>
           </View>
         </PressableScale>
       ))}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     gap: spacing.sm,
-  },
-  chipShell: {
-    marginRight: spacing.sm,
   },
   chip: {
     paddingVertical: spacing.sm,

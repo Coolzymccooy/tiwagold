@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     paddingRight: spacing.lg,
   },
   cardShell: {
-    width: 240,
+    width: 196,
   },
   card: {
     minHeight: 112,

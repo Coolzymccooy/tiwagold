@@ -39,7 +39,7 @@ const conversationsStore: CopilotConversation[] = [
     updatedAt: MOCK_COPILOT_SESSION.updatedAt,
     messageCount: MOCK_COPILOT_SESSION.messages.length,
     previewSnippet:
-      "trd_3 is a sniper-tier long at 2320.00. HTF trend on 4H is up…",
+      "trd_3 is a high-conviction aggressive long at 2320.00. HTF trend on 4H is up…",
   },
   {
     id: "cps_session_0",

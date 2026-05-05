@@ -215,12 +215,12 @@ describe("trade-detail selectors — toTradeDetailView", () => {
     const view = toTradeDetailView(
       makeTrade({
         status: "executed",
-        engineTier: "sniper",
+        engineTier: "aggressive",
         sessionTag: "london",
       }),
     );
     expect(view.statusLabel).toBe("In flight");
-    expect(view.engineLabel).toBe("Sniper engine");
+    expect(view.engineLabel).toBe("Aggressive engine");
     expect(view.sessionLabel).toBe("London");
   });
 

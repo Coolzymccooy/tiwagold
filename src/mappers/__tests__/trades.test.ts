@@ -25,7 +25,7 @@ const baseListItem: TradeListItemDto = {
   symbol: "XAUUSD",
   side: "buy",
   status: "pending",
-  engine: "sniper",
+  engine: "aggressive",
   score: 87,
   levels: {
     entry: "2000.00",

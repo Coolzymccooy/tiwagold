@@ -1,0 +1,9 @@
+appId: host.exp.exponent
+---
+- runFlow:
+    when:
+      visible: "Tiwa Gold"
+    commands:
+      - tapOn:
+          text: "Tiwa Gold"
+          index: 0

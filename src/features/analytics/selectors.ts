@@ -12,7 +12,6 @@ import type {
 const ENGINE_LABELS: Record<string, string> = {
   conservative: "Conservative",
   aggressive: "Aggressive",
-  sniper: "Sniper",
 };
 
 const SESSION_LABELS: Record<string, string> = {

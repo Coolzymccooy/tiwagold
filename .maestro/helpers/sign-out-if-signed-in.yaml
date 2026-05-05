@@ -1,0 +1,17 @@
+appId: host.exp.exponent
+# Walks the Settings tab → Sign out path if the Trades feed is currently visible.
+# Used to bring the app to the signed-out Login screen for auth flows.
+---
+- runFlow:
+    when:
+      visible: "Live setups"
+    commands:
+      - tapOn:
+          text: "Settings"
+      - extendedWaitUntil:
+          visible: "Sign out"
+          timeout: 5000
+      - tapOn: "Sign out"
+      - extendedWaitUntil:
+          visible: "Welcome back"
+          timeout: 10000

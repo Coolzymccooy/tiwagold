@@ -1,36 +1,61 @@
 import { StyleSheet, View } from "react-native";
 import { PressableScale, Text } from "@/design/primitives";
 import { palette, radius, spacing } from "@/design/tokens";
-import type { TradeFeedFilter } from "../types";
+import type { TradeFeedCounts, TradeFeedFilter } from "../types";
 
 export interface FilterBarProps {
   value: TradeFeedFilter;
   onChange: (next: TradeFeedFilter) => void;
   labels: Record<TradeFeedFilter, string>;
+  counts?: TradeFeedCounts;
 }
 
-const ORDER: TradeFeedFilter[] = ["all", "active", "pending", "closed"];
+const ORDER: TradeFeedFilter[] = ["all", "pending", "active", "closed"];
 
-export function FilterBar({ value, onChange, labels }: FilterBarProps) {
+const COUNT_KEY: Record<TradeFeedFilter, keyof TradeFeedCounts> = {
+  all: "all",
+  active: "active",
+  pending: "pending",
+  closed: "closed",
+};
+
+export function FilterBar({ value, onChange, labels, counts }: FilterBarProps) {
   return (
     <View style={styles.row} accessibilityRole="tablist">
       {ORDER.map((key) => {
         const selected = value === key;
+        const count = counts?.[COUNT_KEY[key]];
+        const showBadge = key !== "all" && typeof count === "number" && count > 0;
         return (
           <PressableScale
             key={key}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
             onPress={() => onChange(key)}
-            style={[styles.chip, selected ? styles.chipSelected : null]}
+            style={styles.tab}
           >
-            <Text
-              variant="caption"
-              weight="semibold"
-              tone={selected ? "accent" : "muted"}
-            >
-              {labels[key]}
-            </Text>
+            <View style={styles.tabInner}>
+              <Text
+                variant="caption"
+                weight="bold"
+                tone={selected ? "primary" : "muted"}
+              >
+                {labels[key].toUpperCase()}
+              </Text>
+              {showBadge ? (
+                <View style={styles.badge}>
+                  <Text variant="caption" tone="primary" weight="bold">
+                    {count}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+            <View
+              style={[
+                styles.indicator,
+                selected ? styles.indicatorActive : null,
+              ]}
+            />
           </PressableScale>
         );
       })}
@@ -41,18 +66,32 @@ export function FilterBar({ value, onChange, labels }: FilterBarProps) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
-    gap: spacing.sm,
+    gap: spacing.lg,
   },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+  tab: {
+    paddingTop: spacing.sm,
+    gap: spacing.xs,
+  },
+  tabInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  badge: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
     borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: palette.hairline,
-    backgroundColor: palette.bg.elevated,
+    backgroundColor: palette.accent.gold,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  chipSelected: {
-    borderColor: palette.accent.gold,
-    backgroundColor: "rgba(233,177,76,0.10)",
+  indicator: {
+    height: 2,
+    borderRadius: radius.pill,
+    backgroundColor: "transparent",
+  },
+  indicatorActive: {
+    backgroundColor: palette.accent.gold,
   },
 });

@@ -4,15 +4,18 @@ import {
   type TextProps as RNTextProps,
   type TextStyle,
 } from "react-native";
-import { palette, type } from "../tokens";
+import { font, palette, type } from "../tokens";
 
 export type TextVariant = keyof typeof type;
 export type TextTone = "primary" | "muted" | "subtle" | "accent" | "danger" | "success";
+export type TextWeight = "regular" | "medium" | "semibold" | "bold";
+export type TextFamily = "sans" | "mono";
 
 export interface TextProps extends RNTextProps {
   variant?: TextVariant;
   tone?: TextTone;
-  weight?: "regular" | "medium" | "semibold" | "bold";
+  weight?: TextWeight;
+  family?: TextFamily;
   align?: TextStyle["textAlign"];
 }
 
@@ -25,22 +28,22 @@ const toneColor: Record<TextTone, string> = {
   success: palette.status.success,
 };
 
-const weightMap: Record<NonNullable<TextProps["weight"]>, TextStyle["fontWeight"]> = {
-  regular: "400",
-  medium: "500",
-  semibold: "600",
-  bold: "700",
-};
+function resolveFontFamily(family: TextFamily, weight: TextWeight): string {
+  if (family === "mono") return font.monoWeights[weight];
+  return font.sansWeights[weight];
+}
 
 export function Text({
   variant = "body",
   tone = "primary",
   weight = "regular",
+  family = "sans",
   align,
   style,
   ...rest
 }: TextProps) {
   const variantStyle = type[variant];
+  const fontFamily = resolveFontFamily(family, weight);
   return (
     <RNText
       {...rest}
@@ -49,7 +52,7 @@ export function Text({
         variantStyle,
         {
           color: toneColor[tone],
-          fontWeight: weightMap[weight],
+          fontFamily,
           textAlign: align,
         },
         style,

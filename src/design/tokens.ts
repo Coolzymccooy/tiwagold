@@ -41,17 +41,31 @@ export const radius = {
 } as const;
 
 export const type = {
-  caption: { fontSize: 12, lineHeight: 16, letterSpacing: 0.2 },
-  body: { fontSize: 15, lineHeight: 22, letterSpacing: 0 },
-  title: { fontSize: 18, lineHeight: 24, letterSpacing: -0.1 },
-  headline: { fontSize: 22, lineHeight: 28, letterSpacing: -0.2 },
-  display: { fontSize: 32, lineHeight: 38, letterSpacing: -0.4 },
+  caption: { fontSize: 12, lineHeight: 16, letterSpacing: 0.4 },
+  body: { fontSize: 15, lineHeight: 21, letterSpacing: 0 },
+  title: { fontSize: 18, lineHeight: 22, letterSpacing: -0.1 },
+  headline: { fontSize: 22, lineHeight: 26, letterSpacing: -0.3 },
+  display: { fontSize: 32, lineHeight: 36, letterSpacing: -0.5 },
 } as const;
 
 export const font = {
-  sans: "System",
-  mono: "Menlo",
+  sans: "Inter_400Regular",
+  mono: "JetBrainsMono_500Medium",
+  sansWeights: {
+    regular: "Inter_400Regular",
+    medium: "Inter_500Medium",
+    semibold: "Inter_600SemiBold",
+    bold: "Inter_700Bold",
+  },
+  monoWeights: {
+    regular: "JetBrainsMono_400Regular",
+    medium: "JetBrainsMono_500Medium",
+    semibold: "JetBrainsMono_600SemiBold",
+    bold: "JetBrainsMono_700Bold",
+  },
 } as const;
+
+export type FontWeightName = keyof typeof font.sansWeights;
 
 export const easing = {
   gentle: [0.32, 0.72, 0, 1] as const,

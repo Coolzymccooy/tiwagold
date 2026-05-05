@@ -6,3 +6,5 @@ export { PressableScale } from "./PressableScale";
 export type { PressableScaleProps } from "./PressableScale";
 export { Text } from "./Text";
 export type { TextProps, TextTone, TextVariant } from "./Text";
+export { Slider } from "./Slider";
+export type { SliderProps } from "./Slider";

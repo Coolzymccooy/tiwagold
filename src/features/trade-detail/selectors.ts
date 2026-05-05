@@ -20,7 +20,6 @@ const SESSION_LABELS: Record<Trade["sessionTag"], string> = {
 const ENGINE_LABELS: Record<Trade["engineTier"], string> = {
   conservative: "Conservative engine",
   aggressive: "Aggressive engine",
-  sniper: "Sniper engine",
 };
 
 export function stopDistance(trade: Trade): number {

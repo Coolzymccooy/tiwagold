@@ -5,8 +5,8 @@ import { router } from "expo-router";
 import { GlassCard, PressableScale, Screen, Text } from "@/design/primitives";
 import { palette, radius, spacing } from "@/design/tokens";
 import { COPY } from "@/content/copy";
-import { MacroRadar } from "@/components/MacroRadar";
 import { FilterBar } from "./components/FilterBar";
+import { LivePortfolioHeader } from "./components/LivePortfolioHeader";
 import { TradeCard } from "./components/TradeCard";
 import { useTradeFeed } from "./hooks";
 import type { TradeFeedItem } from "./types";
@@ -15,38 +15,93 @@ function keyExtractor(item: TradeFeedItem): string {
   return item.trade.id;
 }
 
+function formatCurrency(value: number | null, currency: string): string {
+  if (value === null || Number.isNaN(value)) return "—";
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  });
+  return formatter.format(value);
+}
+
+function formatPortfolioPnl(value: number): string | null {
+  if (value === 0) return null;
+  const rounded = Math.round(value * 100) / 100;
+  const sign = rounded >= 0 ? "+$" : "-$";
+  return `${sign}${Math.abs(rounded).toFixed(2)}`;
+}
+
 export function TradeFeedScreen() {
-  const { items, filter, setFilter, isLoading, isRefreshing, isError, refetch } =
-    useTradeFeed();
+  const {
+    items,
+    counts,
+    filter,
+    setFilter,
+    isLoading,
+    isRefreshing,
+    isError,
+    refetch,
+    portfolio,
+    approve,
+    reject,
+    approvingTradeId,
+    rejectingTradeId,
+    actionError,
+  } = useTradeFeed();
 
   const handlePressTrade = useCallback((tradeId: string) => {
     router.push(`/trade/${tradeId}`);
   }, []);
 
   const renderItem: ListRenderItem<TradeFeedItem> = useCallback(
-    ({ item }) => <TradeCard item={item} onPress={handlePressTrade} />,
-    [handlePressTrade],
+    ({ item }) => (
+      <TradeCard
+        item={item}
+        onPress={handlePressTrade}
+        onApprove={approve}
+        onReject={reject}
+        isApproving={approvingTradeId === item.trade.id}
+        isRejecting={rejectingTradeId === item.trade.id}
+      />
+    ),
+    [approve, approvingTradeId, handlePressTrade, reject, rejectingTradeId],
   );
+
+  const equityLabel = formatCurrency(portfolio.equity, portfolio.currency);
+  const portfolioPnlLabel = formatPortfolioPnl(portfolio.dailyPnlUsd);
+  const portfolioTone =
+    portfolio.dailyPnlUsd > 0
+      ? "positive"
+      : portfolio.dailyPnlUsd < 0
+        ? "negative"
+        : "neutral";
 
   return (
     <Screen>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text variant="headline" weight="bold">
-            {COPY.tradeFeed.title}
-          </Text>
-          <Text variant="caption" tone="muted">
-            {COPY.tradeFeed.subtitle}
-          </Text>
+        <View style={styles.headerStack}>
+          <LivePortfolioHeader
+            equityLabel={equityLabel}
+            pnlLabel={portfolioPnlLabel}
+            pnlTone={portfolioTone}
+          />
+          <FilterBar
+            value={filter}
+            onChange={setFilter}
+            labels={COPY.tradeFeed.filter}
+            counts={counts}
+          />
         </View>
 
-        <MacroRadar />
-
-        <FilterBar
-          value={filter}
-          onChange={setFilter}
-          labels={COPY.tradeFeed.filter}
-        />
+        {actionError ? (
+          <View style={styles.errorBanner}>
+            <Text variant="caption" tone="danger" weight="semibold">
+              {actionError}
+            </Text>
+          </View>
+        ) : null}
 
         <View style={styles.body}>
           {isLoading ? (
@@ -133,10 +188,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     gap: spacing.lg,
-    paddingVertical: spacing.xl,
+    paddingTop: spacing.lg,
   },
-  header: {
-    gap: spacing.xs,
+  headerStack: {
+    gap: spacing.md,
   },
   body: {
     flex: 1,
@@ -152,5 +207,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderRadius: radius.md,
     backgroundColor: palette.accent.gold,
+  },
+  errorBanner: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.sm,
+    backgroundColor: "rgba(229,96,77,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(229,96,77,0.30)",
   },
 });

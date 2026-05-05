@@ -18,6 +18,5 @@ export const MOCK_ENGINE_SETTINGS: EngineSettings = {
   engines: [
     { tier: "conservative", enabled: true, minScore: 74 },
     { tier: "aggressive", enabled: true, minScore: 80 },
-    { tier: "sniper", enabled: false, minScore: 86 },
   ],
 };

@@ -14,7 +14,7 @@ export type TradeMode = "conservative" | "aggressive";
 export type SessionName = "london" | "new_york" | "asian" | "off_hours";
 export type Volatility = "low" | "normal" | "high";
 export type StructureBias = "bullish" | "bearish" | "neutral";
-export type EngineTier = "conservative" | "aggressive" | "sniper";
+export type EngineTier = "conservative" | "aggressive";
 
 export interface IndicatorSnapshot {
   rsi14: number;
@@ -103,6 +103,8 @@ export type CandidateStatus =
   | "expired"
   | "cancelled";
 
+export type TradeOrderRouting = "MARKET" | "LIMIT";
+
 export interface TradeCandidate {
   id: string;
   dedupeKey: string;
@@ -119,6 +121,8 @@ export interface TradeCandidate {
   tp1: number;
   tp2?: number;
   riskReward: number;
+  riskPercent?: number;
+  orderRouting?: TradeOrderRouting;
   htfTrend: string;
   ltfStructure: string;
   confluenceTags: string[];
@@ -166,6 +170,7 @@ export interface Trade extends TradeCandidate {
   timeline: TradeTimelineEvent[];
   autopsy?: TradeAutopsy;
   currentPnlR?: number;
+  currentPnlUsd?: number;
 }
 
 export type ExecutionPhase =

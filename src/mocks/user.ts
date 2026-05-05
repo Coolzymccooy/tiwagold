@@ -4,7 +4,7 @@ export const MOCK_USER: UserProfile = {
   id: "usr_demo",
   email: "demo@tiwagold.app",
   displayName: "Ade",
-  tier: "founder",
+  tier: "pro",
   createdAt: "2026-01-04T08:12:00.000Z",
   onboardingCompletedAt: "2026-01-04T08:22:14.000Z",
   broker: {

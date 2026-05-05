@@ -1,0 +1,27 @@
+appId: host.exp.exponent
+name: Tiwa Gold - Login happy path
+tags:
+  - auth
+# Pre-condition: user must be signed out before running this flow.
+# To force signed-out state, clear AsyncStorage in Expo Go's data or sign out first.
+---
+- launchApp:
+    appId: host.exp.exponent
+    clearState: false
+- runFlow: helpers/open-tiwa-gold.yaml
+- extendedWaitUntil:
+    visible: "Welcome back"
+    timeout: 30000
+- assertVisible: "Sign in to continue your edge on gold."
+- tapOn:
+    text: "you@tiwagold.app"
+- inputText: "demo@tiwagold.app"
+- tapOn:
+    text: "Enter your password"
+- inputText: "demo12345"
+- hideKeyboard
+- assertVisible: "Sign in"
+- tapOn: "Sign in"
+- extendedWaitUntil:
+    visible: "Live setups"
+    timeout: 15000

@@ -1,8 +1,10 @@
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import { ChevronLeft } from "lucide-react-native";
 import { GlassCard, PressableScale, Screen, Text } from "@/design/primitives";
 import { palette, radius, spacing } from "@/design/tokens";
 import { COPY } from "@/content/copy";
+import { humanizeSnake } from "@/utils/text";
 import { AutopsyCard } from "./components/AutopsyCard";
 import { LevelGrid } from "./components/LevelGrid";
 import { StatusPill } from "./components/StatusPill";
@@ -74,13 +76,26 @@ export function TradeDetailScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
+          style={styles.backButton}
+          hitSlop={12}
+        >
+          <ChevronLeft size={20} color={palette.fg.primary} />
+          <Text variant="body" weight="semibold">
+            Back
+          </Text>
+        </PressableScale>
         <View style={styles.header}>
           <Text variant="caption" tone="muted" weight="medium">
             {trade.symbol.toUpperCase()} · {sessionLabel.toUpperCase()}
           </Text>
           <Text variant="headline" weight="bold">
-            {trade.setupType}
+            {humanizeSnake(trade.setupType)}
           </Text>
           <Text variant="body" tone="muted">
             {engineLabel}
@@ -146,8 +161,15 @@ export function TradeDetailScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     gap: spacing.lg,
-    paddingVertical: spacing.xl,
+    paddingTop: spacing.sm,
     paddingBottom: spacing["3xl"],
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    alignSelf: "flex-start",
   },
   header: {
     gap: spacing.sm,

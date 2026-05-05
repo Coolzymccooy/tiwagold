@@ -140,4 +140,37 @@ describe("trade-feed selectors — selectTradeFeed", () => {
     selectTradeFeed(trades, "all");
     expect(trades).toEqual(original);
   });
+
+  it("filters out trades whose engine tier is disabled", () => {
+    const conservative = makeTrade({
+      id: "c1",
+      status: "executed",
+      engineTier: "conservative",
+    });
+    const aggressive = makeTrade({
+      id: "a1",
+      status: "executed",
+      engineTier: "aggressive",
+    });
+    const feed = selectTradeFeed([conservative, aggressive], "all", {
+      conservative: true,
+      aggressive: false,
+    });
+    expect(feed.map((i) => i.trade.id)).toEqual(["c1"]);
+  });
+
+  it("does not filter when engineEnabled is omitted", () => {
+    const conservative = makeTrade({
+      id: "c1",
+      status: "executed",
+      engineTier: "conservative",
+    });
+    const aggressive = makeTrade({
+      id: "a1",
+      status: "executed",
+      engineTier: "aggressive",
+    });
+    const feed = selectTradeFeed([conservative, aggressive], "all");
+    expect(feed).toHaveLength(2);
+  });
 });

@@ -26,8 +26,7 @@ export const MOCK_ANALYTICS: AnalyticsSummary = {
   equityCurve,
   byEngine: [
     { engine: "conservative", trades: 9, winRate: 0.67, avgR: 0.52 },
-    { engine: "aggressive", trades: 6, winRate: 0.5, avgR: 0.31 },
-    { engine: "sniper", trades: 3, winRate: 0.67, avgR: 0.48 },
+    { engine: "aggressive", trades: 9, winRate: 0.56, avgR: 0.37 },
   ],
   bySession: [
     { session: "london", trades: 7, winRate: 0.71, avgR: 0.58 },

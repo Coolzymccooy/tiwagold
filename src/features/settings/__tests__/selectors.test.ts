@@ -54,10 +54,12 @@ describe("settings selectors — toProfileRow", () => {
 
   it("maps each tier to its label", () => {
     expect(toProfileRow(makeUser({ tier: "founder" })).tierLabel).toBe(
-      "Founder",
+      "Founder Tier",
     );
-    expect(toProfileRow(makeUser({ tier: "pro" })).tierLabel).toBe("Pro");
-    expect(toProfileRow(makeUser({ tier: "trial" })).tierLabel).toBe("Trial");
+    expect(toProfileRow(makeUser({ tier: "pro" })).tierLabel).toBe("Pro Tier");
+    expect(toProfileRow(makeUser({ tier: "trial" })).tierLabel).toBe(
+      "Trial Tier",
+    );
   });
 
   it("returns '—' for memberSinceLabel on invalid createdAt", () => {
@@ -290,7 +292,7 @@ describe("settings selectors — toSettingsView", () => {
     const view = toSettingsView(
       makeUser({ tier: "founder", broker: makeBroker() }),
     );
-    expect(view?.profile.tierLabel).toBe("Founder");
+    expect(view?.profile.tierLabel).toBe("Founder Tier");
     expect(view?.broker.connected).toBe(true);
     expect(view?.notifications.length).toBe(4);
     expect(view?.risk.length).toBe(3);

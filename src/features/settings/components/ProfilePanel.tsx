@@ -12,25 +12,26 @@ export function ProfilePanel({ profile }: ProfilePanelProps) {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.avatar}>
-          <Text variant="title" weight="bold" tone="accent">
+          <Text variant="headline" weight="bold" tone="accent">
             {initial(profile.displayName)}
           </Text>
         </View>
         <View style={styles.identity}>
-          <Text variant="title" weight="semibold">
+          <Text variant="title" weight="semibold" numberOfLines={1}>
             {profile.displayName}
           </Text>
-          <Text variant="caption" tone="muted">
+          <Text variant="caption" tone="muted" numberOfLines={1}>
             {profile.email}
           </Text>
-        </View>
-        <View style={styles.tierPill}>
-          <Text variant="caption" weight="semibold" tone="accent">
-            {profile.tierLabel}
-          </Text>
+          <View style={styles.tierPill}>
+            <View style={styles.tierDot} />
+            <Text variant="caption" weight="semibold" tone="accent">
+              {profile.tierLabel}
+            </Text>
+          </View>
         </View>
       </View>
-      <View style={styles.meta}>
+      <View style={styles.metaRow}>
         <Text variant="caption" tone="muted">
           Member since
         </Text>
@@ -58,28 +59,38 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   avatar: {
-    width: 48,
-    height: 48,
+    width: 56,
+    height: 56,
     borderRadius: radius.pill,
-    backgroundColor: palette.bg.glass,
+    backgroundColor: "rgba(233,177,76,0.10)",
     borderWidth: 1,
-    borderColor: palette.hairline,
+    borderColor: palette.accent.goldDeep,
     alignItems: "center",
     justifyContent: "center",
   },
   identity: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
   tierPill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: palette.accent.goldDeep,
-    backgroundColor: palette.bg.glass,
+    backgroundColor: "rgba(233,177,76,0.10)",
   },
-  meta: {
+  tierDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: palette.accent.gold,
+  },
+  metaRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",

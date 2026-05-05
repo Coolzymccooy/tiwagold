@@ -30,14 +30,18 @@ function KpiTile({ kpi }: KpiTileProps) {
         : "primary";
   const isHero = kpi.emphasis === "hero";
   return (
-    <GlassCard style={isHero ? styles.heroTile : styles.tile}>
+    <GlassCard
+      padded={false}
+      style={[styles.tileShell, isHero ? styles.heroTile : styles.tile]}
+    >
       <Text variant="caption" tone="muted" weight="semibold">
         {kpi.label.toUpperCase()}
       </Text>
       <Text
-        variant={isHero ? "display" : "headline"}
+        variant={isHero ? "headline" : "title"}
         weight="bold"
         tone={tone}
+        family="mono"
       >
         {kpi.value}
       </Text>
@@ -49,16 +53,19 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.md,
+    gap: spacing.sm,
+  },
+  tileShell: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: 2,
   },
   tile: {
     flexBasis: "47%",
     flexGrow: 1,
-    gap: spacing.xs,
   },
   heroTile: {
     flexBasis: "100%",
     flexGrow: 1,
-    gap: spacing.sm,
   },
 });

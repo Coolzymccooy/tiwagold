@@ -66,8 +66,8 @@ export const COPY = {
       {
         id: "engines",
         eyebrow: "01 · Engines",
-        title: "Three powerful engines",
-        body: "Conservative, aggressive, and sniper engines scan XAU/USD in parallel so only institutional-grade setups reach you.",
+        title: "Two powerful engines",
+        body: "Conservative and aggressive engines scan XAU/USD in parallel so only institutional-grade setups reach you.",
       },
       {
         id: "execution",

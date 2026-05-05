@@ -13,9 +13,9 @@ import type {
 } from "./types";
 
 const TIER_LABELS: Record<UserProfile["tier"], string> = {
-  founder: "Founder",
-  pro: "Pro",
-  trial: "Trial",
+  founder: "Founder Tier",
+  pro: "Pro Tier",
+  trial: "Trial Tier",
 };
 
 const BROKER_KIND_LABELS: Record<BrokerKind, string> = {

@@ -33,7 +33,7 @@ export function BreakdownList({ rows }: BreakdownListProps) {
               </Text>
             </View>
             <View style={styles.metricCol}>
-              <Text variant="body" weight="semibold">
+              <Text variant="body" weight="semibold" family="mono">
                 {row.winRateLabel}
               </Text>
               <Text variant="caption" tone="muted">
@@ -41,7 +41,12 @@ export function BreakdownList({ rows }: BreakdownListProps) {
               </Text>
             </View>
             <View style={styles.metricCol}>
-              <Text variant="body" weight="semibold" tone={row.avgRTone}>
+              <Text
+                variant="body"
+                weight="semibold"
+                tone={row.avgRTone}
+                family="mono"
+              >
                 {row.avgRLabel}
               </Text>
               <Text variant="caption" tone="muted">

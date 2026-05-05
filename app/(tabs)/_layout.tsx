@@ -1,17 +1,25 @@
 import { StyleSheet } from "react-native";
 import { Tabs } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BarChart3, Bot, Settings as SettingsIcon, TrendingUp } from "lucide-react-native";
 import { COPY } from "@/content/copy";
-import { palette, spacing } from "@/design/tokens";
+import { font, palette, spacing } from "@/design/tokens";
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: palette.accent.gold,
         tabBarInactiveTintColor: palette.fg.subtle,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            paddingBottom: Math.max(insets.bottom, spacing.sm),
+            height: 56 + Math.max(insets.bottom, spacing.sm),
+          },
+        ],
         tabBarLabelStyle: styles.tabLabel,
         tabBarItemStyle: styles.tabItem,
         sceneStyle: { backgroundColor: palette.bg.base },
@@ -59,7 +67,7 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 11,
     letterSpacing: 0.2,
-    fontWeight: "500",
+    fontFamily: font.sansWeights.medium,
   },
   tabItem: {
     paddingVertical: spacing.xs,

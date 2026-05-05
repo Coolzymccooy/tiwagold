@@ -20,7 +20,6 @@ export const defaultEngineSettings: EngineSettings = {
   engines: [
     { tier: "conservative", enabled: true, minScore: 72 },
     { tier: "aggressive", enabled: true, minScore: 78 },
-    { tier: "sniper", enabled: false, minScore: 85 },
   ],
   autoApprove: false,
   cooldownMinutes: 20,
