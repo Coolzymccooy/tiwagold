@@ -5,6 +5,18 @@ export { HttpError, createHttpClient } from "./http";
 export type { HttpRequest } from "./http";
 
 export {
+  isLiveBackendEnabled,
+  readLiveBackendConfig,
+  liveFetch,
+  LiveBackendDisabledError,
+  LiveBackendUnconfiguredError,
+  LiveBackendHttpError,
+} from "./liveBackend";
+export type { LiveBackendConfig, LiveFetchOptions } from "./liveBackend";
+
+export { mt5StatusKeys, useMt5Status } from "./mt5Status";
+
+export {
   authKeys,
   useSignIn,
   useAuthSession,

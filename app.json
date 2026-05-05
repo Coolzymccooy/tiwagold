@@ -32,7 +32,10 @@
     "extra": {
       "router": {
         "origin": false
-      }
+      },
+      "USE_LIVE_BACKEND": false,
+      "PERSONA_OVERSEER_BASE_URL": "",
+      "PERSONA_OVERSEER_API_KEY": ""
     }
   }
 }

@@ -58,6 +58,21 @@ Legend:
 - `[GAP][B]` Every endpoint validates its request body server-side via Zod (shared schema pkg) or a language-equivalent schema library. Client-side Zod alone is insufficient.
 - `[GAP][B]` Reject unknown fields (strict mode) to prevent forwards-compat footguns from leaking into storage.
 
+### 0.8 Multi-tenancy posture (per-user MT5 onboarding)
+- `[MOCK]` Mobile contract is already designed for multi-tenant — `BrokerConnection`, `UserProfile`, per-user `RiskSettings` / `EngineSettings`, signed-intent bound to `userId`.
+- `[GAP][B]` `persona-overseer/apps/cloud-api` is currently **single-tenant** — built for Segun's local laptop EA polling one MT5 account. Production launch requires:
+  1. **Per-user encrypted credential storage** (KMS envelope per user, see §8). Drizzle schema needs a `users` table and a `broker_connections.user_id` foreign key.
+  2. **Per-user MT5 connection orchestration** — three viable architectures:
+     - (a) Each user runs a Tiwa-distributed EA on their own machine that authenticates to cloud-api with a per-user JWT. Cheapest infra, weakest UX (user must keep their PC on).
+     - (b) Cloud-api proxies to a hosted MT5 broker integration (MetaApi, MT5 REST, cTrader OpenAPI) using stored per-user credentials. Best UX, monthly per-account fee.
+     - (c) Hybrid — paper/demo via (b), live via (a) until volumes justify (b). Recommended starting posture.
+  3. **Signal fan-out** — when the existing engine produces a candidate, broadcast via per-user filter (engine prefs, risk gate, kill-switch) to N subscribed accounts. Currently the engine writes to one journal and Telegrams Segun.
+  4. **Per-user kill-switch** — `kill_switches` table is keyed by global / strategy currently. Add `user_id` column and update `risk-engine.setKillSwitch` to accept user scope.
+  5. **Per-user JWT auth** — currently `BRIDGE_SECRET` (laptop) and `DASHBOARD_API_KEY` (dashboard) are the only realms; mobile needs its own JWT realm with refresh rotation (see §0.1, §1).
+- `[GAP][B]` **Tenant isolation tests** — every read endpoint must reject cross-user access. Add integration tests that bind two test users and assert `GET /trades` for user A never returns user B's rows.
+- `[GAP][F]` **Onboarding UX**: mobile MT5 connect form posts credentials → cloud-api validates against MT5 (or hosted gateway) before persisting → returns `BrokerConnection` with `status: "connected"` and zero credentials in the response body. Mobile already has the form scaffold ([MT5ConnectCard](src/features/settings/components/MT5ConnectCard.tsx)).
+- `[GAP][H]` **Per-user observability** — every audit-log row carries `user_id` so support can answer "what happened to user X today" without scanning the whole log.
+
 ---
 
 ## 1. Auth domain

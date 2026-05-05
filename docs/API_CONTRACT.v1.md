@@ -4,6 +4,65 @@ Status: Draft v1 · Scope: XAU/USD only · Auth: JWT access + refresh, Signed-In
 
 This document defines the backend contract that the Expo/RN client already consumes via mocked `src/services/*` hooks. Request/response shapes trace 1:1 to `src/types/*` domain models; any deviation is a breaking change and bumps the contract version.
 
+## 0. Backend bridge (Path A — read-only observer)
+
+The contract above describes the **target** API surface that the Tiwa Gold cloud will expose once Phase 3.x multi-tenant work lands. Today, the only deployed trading backend is `persona-overseer/apps/cloud-api` at `https://tiwa.tiwaton.co.uk`, which serves a single-tenant trading dashboard. Mobile bridges to it via `src/services/liveBackend.ts`, gated by `Constants.expoConfig.extra.USE_LIVE_BACKEND === true`.
+
+### 0.1 Path A status of every contract endpoint
+
+| Contract endpoint | Live backend source | Mode | Notes |
+|---|---|---|---|
+| `POST /auth/sign-in`, `/refresh`, `/sign-out`, `/forgot-password`, `/reset-password`, `GET /auth/session` | none — backend has no JWT | **mock-only** | Phase 3.x Blocking; client uses `expo-secure-store` opaque tokens against the mock |
+| `GET /trades` | `GET /trading/journal` (`DASHBOARD_API_KEY` realm) → `journalToTrades` mapper | **live** when flag on | Returns last 100 closed/open trades. Single-tenant (Segun's account) until multi-tenant pivot |
+| `GET /trades/:id` | derived from `GET /trading/journal` (filter by id in mapper) | **live** when flag on | No dedicated detail endpoint exists; mapper filters the journal list |
+| `PATCH /trades/:id/status`, `POST /trades/:id/approve`, `POST /trades/:id/execute` | none — actions live in Telegram inline keyboards | **mock-only** | Phase 3.x Blocking — UI must remain hidden / explicitly stubbed |
+| `GET /trades/:id/execution` | partially observable via BRIDGE_SECRET-gated `GET /api/mt5/status` heartbeat | **mock-only** | Sanitized read endpoint blocked until backend PR |
+| `GET /analytics/summary?range=…` | derived from `GET /trading/journal` → `journalToAnalyticsSummary` mapper | **live** when flag on | Range filtering applied client-side over the equity curve |
+| `GET /analytics/equity?range=…` | derived from `GET /trading/journal` → `journalToAnalyticsEquity` mapper | **live** when flag on | Starts equity at constant 10,000; rRunning rebases per range |
+| `GET /macro/events`, `GET /macro/events/:id` | none — no public macro feed | **mock-only** | Phase 3.x Functional. `GET /trading/evaluations` could partially populate this if folded |
+| `GET /copilot/conversations` | partially `GET /trading/conversations?date=YYYY-MM-DD` (Telegram log) | **mock-only** | Semantic mismatch — Telegram log ≠ chat sessions; needs dedicated endpoint |
+| `GET /copilot/conversations/:id` | none | **mock-only** | Phase 3.x Blocking |
+| `GET /copilot/suggested-prompts` | none | **mock-only** | Static client-side until personalization lands |
+| `POST /copilot/conversations/:id/messages`, `POST /copilot/chat` | LLM exists in `services/chat.ts` but no REST + no SSE | **mock-only** | Phase 3.x Blocking |
+| `GET /users/me`, `PATCH /users/me`, `POST /users/me/avatar` | none — backend is single-tenant | **mock-only** | Phase 3.x Blocking |
+| `GET /settings/risk`, `PATCH /settings/risk`, `GET /settings/engine`, `PATCH /settings/engine` | none — risk-engine + engine identity exist server-side but no per-user REST surface | **mock-only** | Engine toggle prefs live client-side in `useTradingPrefsStore` |
+| `GET /broker/connections` (+ POST/PATCH/DELETE/test) | none | **mock-only** | Phase 3.x Blocking — multi-tenant per-user broker storage |
+| `GET /safety/kill-switch` | DB row exists; no REST read | **mock-only** | Sanitized read endpoint deferred until backend PR |
+| `POST /safety/kill-switch/confirm` | none — Telegram `/killswitch on` only | **mock-only** | Phase 3.x Blocking |
+
+### 0.2 Folded read-only endpoints (live backend has, contract should expose)
+
+These persona-overseer endpoints have no contract counterpart yet. They will be folded into v1 once their consumer screens are built:
+
+| Backend endpoint | Auth | Future contract use |
+|---|---|---|
+| `GET /trading/gold` | DASHBOARD_API_KEY | Copilot context + Macro Radar XAU/USD signal panel |
+| `GET /trading/engine` | DASHBOARD_API_KEY | Engine identity defaults for `EngineSettings` UI |
+| `GET /trading/advisor` | DASHBOARD_API_KEY | Static-context advisor card / Copilot prompt fuel until streaming chat ships |
+| `GET /trading/evaluations` | DASHBOARD_API_KEY | Engine status + WAIT/REJECTED reason surface (Macro Radar adjunct) |
+| `GET /trading/rule-breaks` | DASHBOARD_API_KEY | Risk telemetry on Settings screen |
+| `GET /trading/mt5-status` (sanitised — **route added in persona-overseer working tree, awaiting commit/deploy**) | DASHBOARD_API_KEY | MT5 connection status card on Settings (replaces direct `/api/mt5/status` BRIDGE_SECRET path). Mobile hook: `useMt5Status` |
+
+Each folded endpoint gets a contract section in §11 (deferred) once its mobile screen is wired.
+
+### 0.3 Auth realm for Path A
+
+- **Mobile sends**: `x-api-key: <PERSONA_OVERSEER_API_KEY>` on every read.
+- **The key is treated as public-by-default**: it is read-only, scoped only to `/trading/*` reads, never embedded into mutating flows.
+- **`BRIDGE_SECRET` is never sent from mobile** — that secret stays on the laptop EA and the cloud-api operator only.
+- **Configuration lives in `app.json#extra`** as `USE_LIVE_BACKEND` (boolean), `PERSONA_OVERSEER_BASE_URL` (string), `PERSONA_OVERSEER_API_KEY` (string). All three default to off/empty in source-controlled config; the real key is supplied by the build environment or a local `.env`-equivalent override that is **not committed**.
+- **Path A endpoints are read-only.** Any mutating flow remains `signed-intent`-scoped per the contract sections below and stays mock-only until Phase 3.x.
+
+### 0.4 Live-backend gateway error surface
+
+Three error classes, all from `src/services/liveBackend.ts`:
+
+- `LiveBackendDisabledError` — `extra.USE_LIVE_BACKEND !== true`. Hooks should never see this because they call `isLiveBackendEnabled()` first.
+- `LiveBackendUnconfiguredError` — flag on, but `PERSONA_OVERSEER_BASE_URL` or `PERSONA_OVERSEER_API_KEY` missing. Surface as a Settings-screen banner: "Live backend misconfigured — using offline data."
+- `LiveBackendHttpError` — non-2xx response. Surface as the screen's error state with retry, exactly as the mocks already do via TanStack `error`.
+
+
+
 ## Conventions
 
 - **Base URL**: `https://api.tiwagold.app/v1`
@@ -401,6 +460,36 @@ Domain types: `src/types/safety.ts`.
   - Server MUST reject if `confirmationPhrase !== "STOP ALL TRADING"` (exact match, case-sensitive, no whitespace trimming beyond outer)
 - **Response 200**: `KillSwitchConfirmationResult` → `{ accepted: true, status: KillSwitchStatus, cancelledOrders, closedPositions, completedAt }`
 - **Response 403**: `{ code: "intent_invalid" | "intent_expired" | "phrase_mismatch" }`
+
+---
+
+## 9b. Bridge status (`/trading/mt5-status`)
+
+### 9b.1 `GET /trading/mt5-status` (sanitised, live in Path A)
+
+- **Hook**: `useMt5Status` (`src/services/mt5Status.ts`)
+- **Query key**: `["mt5","status"]`
+- **Auth**: `DASHBOARD_API_KEY` via `x-api-key` header (Path A read realm)
+- **staleTime**: `30_000` · **refetchInterval**: `30_000`
+- **Response 200**: `Mt5StatusResponseDto` →
+  ```ts
+  {
+    online: boolean;
+    lastHeartbeat: string | null;          // ISO-8601
+    account: {
+      number: string | null;
+      broker: string | null;
+      server: string | null;
+      balance: number | null;              // USD
+      equity: number | null;               // USD
+      openPositions: number;               // non-negative integer
+      connectedToBroker: boolean;
+    } | null;
+  }
+  ```
+- **Response 500**: `{ error: "mt5_status_unavailable" }`
+- **Backend source**: `persona-overseer/apps/cloud-api/src/services/trading/mt5-status.ts → sanitizeMt5Status()` over `getLastHeartbeat()` + `isBridgeOnline()`
+- **Sanitisation guarantees** (enforced by backend unit tests): never returns position arrays, pending orders, EA build, spread, bid/ask, or any other strategy-leaking field. If those guarantees regress, the backend test `sanitizeMt5Status > never leaks position arrays or pending orders` fails.
 
 ---
 

@@ -1,5 +1,10 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { MOCK_ANALYTICS } from "@/mocks/analytics";
+import {
+  journalToAnalyticsEquity,
+  journalToAnalyticsSummary,
+} from "@/mappers/journal";
+import { parseJournalDto } from "@/types/dto/journal";
 import type {
   AnalyticsEquitySeries,
   AnalyticsRange,
@@ -7,6 +12,19 @@ import type {
   EquityPoint,
 } from "@/types/analytics";
 import { simulateFetch } from "./client";
+import { isLiveBackendEnabled, liveFetch } from "./liveBackend";
+
+const JOURNAL_PATH = "/trading/journal";
+
+async function fetchSummaryLive(range: AnalyticsRange): Promise<AnalyticsSummary> {
+  const raw = await liveFetch<unknown>(JOURNAL_PATH);
+  return journalToAnalyticsSummary(parseJournalDto(raw), range);
+}
+
+async function fetchEquityLive(range: AnalyticsRange): Promise<AnalyticsEquitySeries> {
+  const raw = await liveFetch<unknown>(JOURNAL_PATH);
+  return journalToAnalyticsEquity(parseJournalDto(raw), range);
+}
 
 export const analyticsKeys = {
   summary: (range: AnalyticsRange) => ["analytics", "summary", range] as const,
@@ -143,9 +161,11 @@ export function useAnalyticsSummary(
   return useQuery({
     queryKey: analyticsKeys.summary(range),
     queryFn: () =>
-      simulateFetch<AnalyticsSummary>(() =>
-        scaleSummaryForRange(MOCK_ANALYTICS, range),
-      ),
+      isLiveBackendEnabled()
+        ? fetchSummaryLive(range)
+        : simulateFetch<AnalyticsSummary>(() =>
+            scaleSummaryForRange(MOCK_ANALYTICS, range),
+          ),
     staleTime: 60_000,
   });
 }
@@ -156,9 +176,11 @@ export function useAnalyticsEquity(
   return useQuery({
     queryKey: analyticsKeys.equity(range),
     queryFn: () =>
-      simulateFetch<AnalyticsEquitySeries>(() =>
-        computeEquitySeries(range, MOCK_ANALYTICS.equityCurve),
-      ),
+      isLiveBackendEnabled()
+        ? fetchEquityLive(range)
+        : simulateFetch<AnalyticsEquitySeries>(() =>
+            computeEquitySeries(range, MOCK_ANALYTICS.equityCurve),
+          ),
     staleTime: 60_000,
   });
 }

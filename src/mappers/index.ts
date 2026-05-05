@@ -8,3 +8,4 @@ export * from "./copilot";
 export * from "./analytics";
 export * from "./settings";
 export * from "./trades";
+export * from "./journal";
