@@ -46,6 +46,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         process.env.PERSONA_OVERSEER_API_KEY,
         baseExtra.PERSONA_OVERSEER_API_KEY,
       ),
+      PERSONA_OVERSEER_DEVICE_TOKEN: pickString(
+        process.env.PERSONA_OVERSEER_DEVICE_TOKEN,
+        baseExtra.PERSONA_OVERSEER_DEVICE_TOKEN,
+      ),
     },
   };
 };

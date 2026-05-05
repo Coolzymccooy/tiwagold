@@ -2,6 +2,7 @@ type ExtraShape = {
   USE_LIVE_BACKEND?: unknown;
   PERSONA_OVERSEER_BASE_URL?: unknown;
   PERSONA_OVERSEER_API_KEY?: unknown;
+  PERSONA_OVERSEER_DEVICE_TOKEN?: unknown;
 };
 
 const mutableExtra: { value: ExtraShape } = { value: {} };
@@ -39,11 +40,13 @@ describe("readLiveBackendConfig", () => {
       USE_LIVE_BACKEND: "true",
       PERSONA_OVERSEER_BASE_URL: "https://tiwa.tiwaton.co.uk ",
       PERSONA_OVERSEER_API_KEY: "live-key",
+      PERSONA_OVERSEER_DEVICE_TOKEN: "device-abc ",
     });
     const config = readLiveBackendConfig();
     expect(config.enabled).toBe(true);
     expect(config.baseUrl).toBe("https://tiwa.tiwaton.co.uk");
     expect(config.apiKey).toBe("live-key");
+    expect(config.deviceToken).toBe("device-abc");
   });
 
   test("treats missing fields as disabled / empty", () => {
@@ -51,11 +54,13 @@ describe("readLiveBackendConfig", () => {
       USE_LIVE_BACKEND: false,
       PERSONA_OVERSEER_BASE_URL: "",
       PERSONA_OVERSEER_API_KEY: "",
+      PERSONA_OVERSEER_DEVICE_TOKEN: "",
     });
     const config = readLiveBackendConfig();
     expect(config.enabled).toBe(false);
     expect(config.baseUrl).toBe("");
     expect(config.apiKey).toBe("");
+    expect(config.deviceToken).toBe("");
   });
 });
 
@@ -127,6 +132,34 @@ describe("liveFetch", () => {
       expect.objectContaining({
         method: "GET",
         headers: expect.objectContaining({ "x-api-key": "live-key" }),
+      }),
+    );
+    const callHeaders = fetchImpl.mock.calls[0][1].headers as Record<string, string>;
+    expect(callHeaders["x-tiwa-device-token"]).toBeUndefined();
+  });
+
+  test("attaches x-tiwa-device-token header when device token is configured", async () => {
+    setExtra({
+      USE_LIVE_BACKEND: true,
+      PERSONA_OVERSEER_BASE_URL: "https://tiwa.test",
+      PERSONA_OVERSEER_API_KEY: "live-key",
+      PERSONA_OVERSEER_DEVICE_TOKEN: "device-abc",
+    });
+    const fetchImpl = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    });
+    await liveFetch("/trading/mt5-status", {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "https://tiwa.test/trading/mt5-status",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "x-api-key": "live-key",
+          "x-tiwa-device-token": "device-abc",
+        }),
       }),
     );
   });

@@ -29,12 +29,14 @@ export interface LiveBackendConfig {
   enabled: boolean;
   baseUrl: string;
   apiKey: string;
+  deviceToken: string;
 }
 
 interface LiveBackendExtra {
   USE_LIVE_BACKEND?: unknown;
   PERSONA_OVERSEER_BASE_URL?: unknown;
   PERSONA_OVERSEER_API_KEY?: unknown;
+  PERSONA_OVERSEER_DEVICE_TOKEN?: unknown;
 }
 
 function readExtra(): LiveBackendExtra {
@@ -59,6 +61,7 @@ export function readLiveBackendConfig(): LiveBackendConfig {
     enabled: readBoolean(extra.USE_LIVE_BACKEND),
     baseUrl: readString(extra.PERSONA_OVERSEER_BASE_URL),
     apiKey: readString(extra.PERSONA_OVERSEER_API_KEY),
+    deviceToken: readString(extra.PERSONA_OVERSEER_DEVICE_TOKEN),
   };
 }
 
@@ -83,12 +86,16 @@ export async function liveFetch<T>(
 
   const url = path.startsWith("http") ? path : `${config.baseUrl}${path}`;
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  const headers: Record<string, string> = {
+    accept: "application/json",
+    "x-api-key": config.apiKey,
+  };
+  if (config.deviceToken.length > 0) {
+    headers["x-tiwa-device-token"] = config.deviceToken;
+  }
   const response = await fetchImpl(url, {
     method: "GET",
-    headers: {
-      accept: "application/json",
-      "x-api-key": config.apiKey,
-    },
+    headers,
     signal: options.signal,
   });
 
