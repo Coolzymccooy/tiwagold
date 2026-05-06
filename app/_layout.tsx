@@ -20,8 +20,22 @@ import {
   JetBrainsMono_700Bold,
 } from "@expo-google-fonts/jetbrains-mono";
 import { palette } from "@/design/tokens";
+import { useAuthRouting } from "@/hooks/useAuthRouting";
 
 void SplashScreen.preventAutoHideAsync();
+
+function RootStack() {
+  useAuthRouting();
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: palette.bg.base },
+        animation: "fade",
+      }}
+    />
+  );
+}
 
 export default function RootLayout() {
   const [queryClient] = useState(
@@ -63,13 +77,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <StatusBar style="light" />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: palette.bg.base },
-              animation: "fade",
-            }}
-          />
+          <RootStack />
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
