@@ -9,3 +9,4 @@ export { NotificationToggleRow } from "./NotificationToggleRow";
 export { RiskOptionRow } from "./RiskOptionRow";
 export { LegalRow } from "./LegalRow";
 export { SignOutButton } from "./SignOutButton";
+export { DangerZoneCard } from "./DangerZoneCard";
