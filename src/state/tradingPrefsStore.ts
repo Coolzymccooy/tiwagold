@@ -20,7 +20,7 @@ export interface TradingPrefsStore extends TradingPrefsState {
 }
 
 const defaultPrefs: Omit<TradingPrefsState, "hydrated"> = {
-  engineEnabled: { conservative: true, aggressive: false },
+  engineEnabled: { conservative: true, aggressive: true },
   maxDailyDrawdownPct: 50,
   maxOpenPositions: 3,
 };

@@ -1,4 +1,7 @@
 import Constants from "expo-constants";
+import { z } from "zod";
+import type { AuthSession } from "@/types/auth";
+import { coordinateRefresh } from "@/state/authRefreshCoordinator";
 
 export class LiveBackendDisabledError extends Error {
   constructor() {
@@ -125,12 +128,26 @@ export interface AuthFetchOptions {
   bearerToken?: string | null;
   fetchImpl?: typeof fetch;
   signal?: AbortSignal;
+  /**
+   * Internal flag — when true, a 401 response will NOT trigger an auto-refresh
+   * + retry. Used to break the recursion when the refresh request itself is
+   * a 401 (refresh token also dead). Callers should leave this undefined.
+   */
+  skipAutoRefresh?: boolean;
 }
 
 /**
  * Auth-realm fetch. Hits the same `PERSONA_OVERSEER_BASE_URL` host but does
  * NOT send `x-api-key` or `x-tiwa-device-token` — those gate /trading/*
  * (Path B). Auth routes are public; /users/me uses a Bearer access token.
+ *
+ * On a 401 response with a bearer token attached, this transparently:
+ *   1. Calls the refresh-token coordinator (single-flight).
+ *   2. Retries the request once with the rotated access token.
+ *   3. If the refresh fails, propagates the original 401 and signs out.
+ *
+ * Set `skipAutoRefresh: true` on internal callers to disable the loop (the
+ * `/auth/refresh` request itself uses this internally).
  */
 export async function authFetch<T>(
   path: string,
@@ -158,6 +175,23 @@ export async function authFetch<T>(
     signal: options.signal,
   });
 
+  if (
+    response.status === 401 &&
+    !options.skipAutoRefresh &&
+    options.bearerToken &&
+    options.bearerToken.length > 0
+  ) {
+    const refreshedAccessToken = await tryRefreshAccessToken(fetchImpl);
+    if (refreshedAccessToken) {
+      return authFetch<T>(path, {
+        ...options,
+        bearerToken: refreshedAccessToken,
+        skipAutoRefresh: true,
+      });
+    }
+    // Refresh failed; fall through to the standard 401 error below.
+  }
+
   if (!response.ok) {
     const body = await safeJson(response);
     throw new LiveBackendHttpError(
@@ -168,4 +202,57 @@ export async function authFetch<T>(
   }
 
   return (await response.json()) as T;
+}
+
+const refreshSessionResponseSchema = z.object({
+  user: z.object({
+    id: z.string(),
+    email: z.string(),
+    displayName: z.string(),
+    tier: z.enum(["trial", "pro", "founder"]),
+    createdAt: z.string(),
+  }),
+  accessToken: z.string(),
+  accessTokenExpiresAt: z.string(),
+  refreshToken: z.string().optional(),
+  refreshTokenExpiresAt: z.string().optional(),
+});
+
+async function tryRefreshAccessToken(
+  fetchImpl: typeof fetch,
+): Promise<string | null> {
+  try {
+    const session = await coordinateRefresh(async (refreshToken) => {
+      const raw = await authFetch<unknown>("/auth/refresh", {
+        method: "POST",
+        body: { refreshToken },
+        fetchImpl,
+        skipAutoRefresh: true,
+      });
+      const parsed = refreshSessionResponseSchema.parse(raw);
+      const issuedAt = new Date().toISOString();
+      const next: AuthSession = {
+        userId: parsed.user.id,
+        access: {
+          value: parsed.accessToken,
+          tokenType: "Bearer",
+          issuedAt,
+          expiresAt: parsed.accessTokenExpiresAt,
+        },
+      };
+      if (parsed.refreshToken && parsed.refreshTokenExpiresAt) {
+        next.refresh = {
+          value: parsed.refreshToken,
+          issuedAt,
+          expiresAt: parsed.refreshTokenExpiresAt,
+        };
+      }
+      return next;
+    });
+    return session.access.value;
+  } catch {
+    // coordinateRefresh signs out on failure; surface null so the caller
+    // throws the original 401 to the screen.
+    return null;
+  }
 }
