@@ -339,6 +339,35 @@ export const COPY = {
     actions: {
       signOut: "Sign out",
     },
+    danger: {
+      title: "Danger zone",
+      subtitle:
+        "Permanently remove your Tiwa Gold account. This can't be undone.",
+      delete: "Delete account",
+      deleting: "Deleting account…",
+      firstConfirm: {
+        title: "Delete account?",
+        body:
+          "This permanently removes your account, broker connection, and trading history from Tiwa Gold. The same email can register again afterwards.",
+        cancel: "Cancel",
+        confirm: "Delete account",
+      },
+      finalConfirm: {
+        title: "Are you absolutely sure?",
+        body:
+          "This action can't be undone. All your data will be deleted. The same email may register a new account.",
+        cancel: "Keep my account",
+        confirm: "Yes, delete forever",
+      },
+      success: {
+        title: "Account deleted",
+        body: "Your account is gone. We're sorry to see you go.",
+      },
+      error: {
+        title: "Couldn't delete account",
+        body: "Check your connection and try again.",
+      },
+    },
   },
   riskBlock: {
     dailyLoss: "Daily loss limit hit — no new setups today.",

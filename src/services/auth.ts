@@ -269,6 +269,63 @@ export function useSignOut(): UseMutationResult<void, Error, void> {
   });
 }
 
+const liveDeleteAccountResponseSchema = z.object({
+  ok: z.literal(true),
+  deletedAt: z.string(),
+  cleanup: z.object({
+    refreshTokens: z.number(),
+    passwordResets: z.number(),
+    brokerConnections: z.number(),
+  }),
+});
+
+export interface DeleteAccountResult {
+  ok: true;
+  deletedAt: string;
+  cleanup: {
+    refreshTokens: number;
+    passwordResets: number;
+    brokerConnections: number;
+  };
+}
+
+export function useDeleteAccount(): UseMutationResult<
+  DeleteAccountResult,
+  Error,
+  void
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const accessToken = useAuthStore.getState().session?.access.value ?? null;
+      if (isLiveBackendEnabled()) {
+        if (!accessToken) {
+          throw new Error("No active session");
+        }
+        const raw = await authFetch<unknown>("/users/me", {
+          method: "DELETE",
+          bearerToken: accessToken,
+        });
+        const parsed = liveDeleteAccountResponseSchema.parse(raw);
+        return {
+          ok: parsed.ok,
+          deletedAt: parsed.deletedAt,
+          cleanup: parsed.cleanup,
+        };
+      }
+      return simulateFetch(() => ({
+        ok: true as const,
+        deletedAt: nowIso(),
+        cleanup: { refreshTokens: 0, passwordResets: 0, brokerConnections: 0 },
+      }));
+    },
+    onSuccess: () => {
+      // Wipe every cached query for this user — the account is gone.
+      queryClient.clear();
+    },
+  });
+}
+
 const liveForgotPasswordResponseSchema = z.object({
   accepted: z.literal(true),
   requestId: z.string(),

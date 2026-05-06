@@ -8,6 +8,7 @@ import type { BrokerConnection } from "@/types/broker";
 import {
   ActiveEnginesCard,
   BridgeStatusCard,
+  DangerZoneCard,
   LegalRow,
   MT5ConnectCard,
   NotificationToggleRow,
@@ -17,7 +18,11 @@ import {
   SectionCard,
   SignOutButton,
 } from "./components";
-import { useSettings, useSignOutAction } from "./hooks";
+import {
+  useDeleteAccountAction,
+  useSettings,
+  useSignOutAction,
+} from "./hooks";
 import type {
   LegalLinkId,
   NotificationToggleId,
@@ -27,6 +32,7 @@ import type {
 export function SettingsScreen() {
   const { view, isLoading, isError, refetch } = useSettings();
   const { signOut, isSigningOut } = useSignOutAction();
+  const { deleteAccount, isDeleting } = useDeleteAccountAction();
   const brokers = useBrokerConnections();
 
   const mt5Connection = useMemo<BrokerConnection | undefined>(
@@ -141,6 +147,11 @@ export function SettingsScreen() {
           label={COPY.settings.actions.signOut}
           onPress={signOut}
           isSigningOut={isSigningOut}
+        />
+
+        <DangerZoneCard
+          onConfirmDelete={deleteAccount}
+          isDeleting={isDeleting}
         />
       </ScrollView>
     </Screen>
