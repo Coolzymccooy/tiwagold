@@ -124,6 +124,90 @@ describe("journalRowToTrade", () => {
     expect(trade.status).toBe("created");
     expect(trade.autopsy).toBeUndefined();
   });
+
+  test("prefers explicit mode='aggressive' from cloud over substring inference", () => {
+    // setupType has no 'aggressive' or 'breakout' substring (matches the
+    // real-world setup names like smc_continuation), so the inference
+    // would say 'conservative'. The explicit `mode` field must win.
+    const row = {
+      ...fixture().trades[0]!,
+      setupType: "smc_continuation",
+      mode: "aggressive" as const,
+    };
+    const trade = journalRowToTrade(row);
+    expect(trade.engineTier).toBe("aggressive");
+    expect(trade.mode).toBe("aggressive");
+  });
+
+  test("explicit mode='conservative' overrides setupType containing 'aggressive'", () => {
+    // Inverse case: even if setupType happens to include 'aggressive',
+    // an explicit conservative mode from the cloud is authoritative.
+    const row = {
+      ...fixture().trades[0]!,
+      setupType: "aggressive_breakout",
+      mode: "conservative" as const,
+    };
+    const trade = journalRowToTrade(row);
+    expect(trade.engineTier).toBe("conservative");
+    expect(trade.mode).toBe("conservative");
+  });
+
+  test("falls back to inferEngineTier when mode is missing (legacy / older deploy)", () => {
+    const row = {
+      ...fixture().trades[0]!,
+      setupType: "aggressive_continuation",
+      mode: undefined,
+    };
+    const trade = journalRowToTrade(row);
+    expect(trade.engineTier).toBe("aggressive");
+    expect(trade.mode).toBe("aggressive");
+  });
+
+  test("falls back to inferEngineTier when mode is null (transitional shape)", () => {
+    // During a rolling deploy a row may surface mode=null instead of
+    // omitting the field. The schema accepts it (`.nullish()`) and the
+    // mapper falls back to setupType inference.
+    const row = {
+      ...fixture().trades[0]!,
+      setupType: "aggressive_continuation",
+      mode: null,
+    };
+    const trade = journalRowToTrade(row);
+    expect(trade.engineTier).toBe("aggressive");
+    expect(trade.mode).toBe("aggressive");
+  });
+});
+
+describe("parseJournalDto — mode field tolerance", () => {
+  test("accepts mode: null on individual rows without rejecting the whole payload", () => {
+    // Regression for codex P1: legacy/transitional rows with mode=null
+    // must not blow up parseJournalDto for the entire journal response.
+    const payload = fixture();
+    const rowWithNull = {
+      ...payload.trades[0]!,
+      mode: null as null,
+    };
+    const result = parseJournalDto({
+      ...payload,
+      trades: [rowWithNull, ...payload.trades.slice(1)],
+    });
+    expect(result.trades).toHaveLength(payload.trades.length);
+    expect(result.trades[0]?.mode ?? null).toBeNull();
+  });
+
+  test("accepts mode field omitted entirely", () => {
+    const payload = fixture();
+    const { mode: _drop, ...rowWithoutMode } = {
+      ...payload.trades[0]!,
+      mode: undefined,
+    };
+    void _drop;
+    const result = parseJournalDto({
+      ...payload,
+      trades: [rowWithoutMode, ...payload.trades.slice(1)],
+    });
+    expect(result.trades).toHaveLength(payload.trades.length);
+  });
 });
 
 describe("journalToTrades", () => {

@@ -17,6 +17,16 @@ export const journalExecutionStateSchema = z.enum([
 export const journalTradeRowSchema = z.object({
   id: z.string(),
   direction: z.enum(["BUY", "SELL"]),
+  // Source of truth for engineTier on the mobile side; falls back to
+  // substring inference on setupType when the cloud doesn't surface it.
+  // `nullish` (accepts null AND undefined) handles three transitional shapes:
+  //   • field missing entirely (legacy deploy without the projection)
+  //   • field present but null (legacy row + new projection that forwards
+  //     the raw column instead of coalescing)
+  //   • field present with a real enum value (current behaviour)
+  // Without `.nullish()`, a single row with `mode: null` would fail the
+  // whole journal payload and the journal/analytics views couldn't load.
+  mode: z.enum(["conservative", "aggressive"]).nullish(),
   setupType: z.string().nullable().optional(),
   state: z.string(),
   executionState: journalExecutionStateSchema.optional(),
