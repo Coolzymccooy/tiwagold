@@ -54,6 +54,24 @@ function inferMode(setupType: string | null | undefined): TradeMode {
   return inferEngineTier(setupType) === "aggressive" ? "aggressive" : "conservative";
 }
 
+/**
+ * Resolve engineTier from the cloud row. Prefer the explicit `mode` field
+ * (the trades table column written when the candidate was approved); fall
+ * back to substring inference on setupType for legacy rows / older
+ * deploys that don't yet surface mode in the journal response.
+ */
+function resolveEngineTier(row: JournalTradeRowDto): EngineTier {
+  if (row.mode === "aggressive") return "aggressive";
+  if (row.mode === "conservative") return "conservative";
+  return inferEngineTier(row.setupType);
+}
+
+function resolveMode(row: JournalTradeRowDto): TradeMode {
+  if (row.mode === "aggressive") return "aggressive";
+  if (row.mode === "conservative") return "conservative";
+  return inferMode(row.setupType);
+}
+
 function statusFromJournalState(state: string): CandidateStatus {
   switch (state.toUpperCase()) {
     case "VALID":
@@ -140,8 +158,8 @@ function buildTimeline(row: JournalTradeRowDto): TradeTimelineEvent[] {
 export function journalRowToTrade(row: JournalTradeRowDto): Trade {
   const sessionTag = normalizeSession(row.session);
   const setupType = row.setupType ?? "unknown";
-  const engineTier = inferEngineTier(row.setupType);
-  const mode = inferMode(row.setupType);
+  const engineTier = resolveEngineTier(row);
+  const mode = resolveMode(row);
   const closedAt = row.closedAt ?? null;
   const updatedAt = closedAt ?? row.createdAt;
   const expiresAtMs = new Date(row.createdAt).getTime() + 4 * 60 * 60 * 1000;
@@ -297,7 +315,7 @@ function bucketsByEngine(rows: JournalTradeRowDto[]): EngineBreakdown[] {
     aggressive: { trades: 0, wins: 0, totalR: 0 },
   };
   for (const row of rows) {
-    const tier = inferEngineTier(row.setupType);
+    const tier = resolveEngineTier(row);
     const bucket = buckets[tier];
     if (row.state.toUpperCase() !== "CLOSED") continue;
     bucket.trades += 1;
@@ -325,7 +343,7 @@ function bucketsByMode(rows: JournalTradeRowDto[]): ModeBreakdown[] {
   };
   for (const row of rows) {
     if (row.state.toUpperCase() !== "CLOSED") continue;
-    const mode = inferMode(row.setupType);
+    const mode = resolveMode(row);
     const bucket = buckets[mode];
     bucket.trades += 1;
     if (row.result === "WIN") bucket.wins += 1;

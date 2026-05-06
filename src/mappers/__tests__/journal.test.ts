@@ -124,6 +124,44 @@ describe("journalRowToTrade", () => {
     expect(trade.status).toBe("created");
     expect(trade.autopsy).toBeUndefined();
   });
+
+  test("prefers explicit mode='aggressive' from cloud over substring inference", () => {
+    // setupType has no 'aggressive' or 'breakout' substring (matches the
+    // real-world setup names like smc_continuation), so the inference
+    // would say 'conservative'. The explicit `mode` field must win.
+    const row = {
+      ...fixture().trades[0]!,
+      setupType: "smc_continuation",
+      mode: "aggressive" as const,
+    };
+    const trade = journalRowToTrade(row);
+    expect(trade.engineTier).toBe("aggressive");
+    expect(trade.mode).toBe("aggressive");
+  });
+
+  test("explicit mode='conservative' overrides setupType containing 'aggressive'", () => {
+    // Inverse case: even if setupType happens to include 'aggressive',
+    // an explicit conservative mode from the cloud is authoritative.
+    const row = {
+      ...fixture().trades[0]!,
+      setupType: "aggressive_breakout",
+      mode: "conservative" as const,
+    };
+    const trade = journalRowToTrade(row);
+    expect(trade.engineTier).toBe("conservative");
+    expect(trade.mode).toBe("conservative");
+  });
+
+  test("falls back to inferEngineTier when mode is missing (legacy / older deploy)", () => {
+    const row = {
+      ...fixture().trades[0]!,
+      setupType: "aggressive_continuation",
+      mode: undefined,
+    };
+    const trade = journalRowToTrade(row);
+    expect(trade.engineTier).toBe("aggressive");
+    expect(trade.mode).toBe("aggressive");
+  });
 });
 
 describe("journalToTrades", () => {

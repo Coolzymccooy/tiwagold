@@ -17,6 +17,10 @@ export const journalExecutionStateSchema = z.enum([
 export const journalTradeRowSchema = z.object({
   id: z.string(),
   direction: z.enum(["BUY", "SELL"]),
+  // Source of truth for engineTier on the mobile side; falls back to
+  // substring inference on setupType when the cloud doesn't surface it
+  // (legacy rows / older deploys). Backend default is 'conservative'.
+  mode: z.enum(["conservative", "aggressive"]).optional(),
   setupType: z.string().nullable().optional(),
   state: z.string(),
   executionState: journalExecutionStateSchema.optional(),
