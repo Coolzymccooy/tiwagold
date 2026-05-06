@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { router } from "expo-router";
-import { useForgotPassword, useSignIn } from "@/services/auth";
+import { useForgotPassword, useSignIn, useSignUp } from "@/services/auth";
 import { useAuthStore } from "@/state/authStore";
 import {
   forgotPasswordFormInitialState,
@@ -77,7 +77,7 @@ export interface UseSignupFormResult {
 
 export function useSignupForm(): UseSignupFormResult {
   const [state, setState] = useState<SignupFormState>(signupFormInitialState);
-  const signIn = useSignIn();
+  const signUp = useSignUp();
   const storeSignIn = useAuthStore((s) => s.signIn);
 
   const setField = useCallback((field: SignupFormField, value: string) => {
@@ -90,14 +90,12 @@ export function useSignupForm(): UseSignupFormResult {
     if (!selectCanSubmitSignup(state)) return;
     setState((prev) => ({ ...prev, submitting: true, error: null }));
     try {
-      const result = await signIn.mutateAsync({
+      const result = await signUp.mutateAsync({
         email: state.email.trim(),
         password: state.password,
+        displayName: state.name.trim(),
       });
-      storeSignIn({
-        session: result.session,
-        user: { ...result.user, displayName: state.name.trim() },
-      });
+      storeSignIn(result);
       setState(signupFormInitialState);
       router.replace("/");
     } catch (error: unknown) {
@@ -107,7 +105,7 @@ export function useSignupForm(): UseSignupFormResult {
           : "We couldn't create your account. Try again.";
       setState((prev) => ({ ...prev, submitting: false, error: message }));
     }
-  }, [signIn, state, storeSignIn]);
+  }, [signUp, state, storeSignIn]);
 
   return {
     state,
