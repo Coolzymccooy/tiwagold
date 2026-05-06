@@ -120,14 +120,56 @@ describe("signIn", () => {
 });
 
 describe("signOut", () => {
-  it("clears session, user, and onboardingComplete", () => {
+  it("clears session and user", () => {
     storeState().signIn({ session: makeSession(), user: makeUser() });
     storeState().signOut();
 
     const s = storeState();
     expect(s.session).toBeNull();
     expect(s.user).toBeNull();
-    expect(s.onboardingComplete).toBe(false);
+  });
+
+  it("preserves onboardingComplete across sign-out (device-sticky)", () => {
+    storeState().signIn({ session: makeSession(), user: makeUser() });
+    expect(storeState().onboardingComplete).toBe(true);
+
+    storeState().signOut();
+
+    // Once onboarded on this device, signing out shouldn't make us
+    // re-watch the intro slides on next sign-in.
+    expect(storeState().onboardingComplete).toBe(true);
+  });
+});
+
+describe("signIn — sticky onboarding completion", () => {
+  it("upgrades onboardingComplete=false → true when the cloud user has onboardingCompletedAt", () => {
+    storeState().signIn({
+      session: makeSession(),
+      user: makeUser({ onboardingCompletedAt: FIXED_NOW.toISOString() }),
+    });
+    expect(storeState().onboardingComplete).toBe(true);
+  });
+
+  it("preserves an existing onboardingComplete=true when the cloud doesn't return onboardingCompletedAt", () => {
+    storeState().completeOnboarding();
+    expect(storeState().onboardingComplete).toBe(true);
+
+    // Simulate the live cloud, which currently returns no onboardingCompletedAt.
+    storeState().signIn({
+      session: makeSession(),
+      user: makeUser({ onboardingCompletedAt: undefined }),
+    });
+
+    // Must remain true — otherwise every sign-in re-shows the intro slides.
+    expect(storeState().onboardingComplete).toBe(true);
+  });
+
+  it("does not falsely set onboardingComplete=true when both local and cloud are unset", () => {
+    storeState().signIn({
+      session: makeSession(),
+      user: makeUser({ onboardingCompletedAt: undefined }),
+    });
+    expect(storeState().onboardingComplete).toBe(false);
   });
 });
 

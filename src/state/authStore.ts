@@ -39,12 +39,17 @@ export const useAuthStore = create<AuthStore>()(
       onboardingComplete: false,
       hydrated: false,
       signIn: ({ session, user }) =>
-        set({
+        // Sticky-true onboarding completion. The cloud doesn't currently
+        // track `onboardingCompletedAt`, so we honour the local flag and
+        // only upgrade to `true` (never downgrade). Once a device has
+        // completed the intro, signing in/out won't re-show it.
+        set((state) => ({
           session,
           user,
-          onboardingComplete: Boolean(user.onboardingCompletedAt),
-        }),
-      signOut: () => set({ session: null, user: null, onboardingComplete: false }),
+          onboardingComplete:
+            Boolean(user.onboardingCompletedAt) || state.onboardingComplete,
+        })),
+      signOut: () => set({ session: null, user: null }),
       completeOnboarding: () => set({ onboardingComplete: true }),
       setUser: (user) => set({ user }),
       setSession: (session) => set({ session }),

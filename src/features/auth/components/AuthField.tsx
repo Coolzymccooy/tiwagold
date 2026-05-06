@@ -73,7 +73,10 @@ export function AuthField({
 
 const styles = StyleSheet.create({
   row: {
-    gap: spacing.xs,
+    // sm (8) gives the inline error room to breathe between the input
+    // and the next form element. xs (4) made the error text touch the
+    // disabled submit button on the forgot-password screen.
+    gap: spacing.sm,
   },
   inputShell: {
     marginTop: spacing.xs,
