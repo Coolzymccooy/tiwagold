@@ -1,7 +1,7 @@
 import { StyleSheet } from "react-native";
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BarChart3, Bot, Settings as SettingsIcon, TrendingUp } from "lucide-react-native";
+import { BarChart3, BellRing, Bot, Settings as SettingsIcon, TrendingUp } from "lucide-react-native";
 import { COPY } from "@/content/copy";
 import { font, palette, spacing } from "@/design/tokens";
 
@@ -30,6 +30,13 @@ export default function TabsLayout() {
         options={{
           title: COPY.tabs.trades,
           tabBarIcon: ({ color, size }) => <TrendingUp color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="pending"
+        options={{
+          title: COPY.tabs.pending,
+          tabBarIcon: ({ color, size }) => <BellRing color={color} size={size} />,
         }}
       />
       <Tabs.Screen

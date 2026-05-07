@@ -27,7 +27,68 @@ export const brokerKeys = {
   all: ["broker", "connections"] as const,
   detail: (id: string) => ["broker", "connection", id] as const,
   test: (id: string) => ["broker", "connection", id, "test"] as const,
+  bridgeStatus: ["broker", "bridge-status"] as const,
 };
+
+const liveBridgeStatusSchema = z.object({
+  token_active: z.boolean(),
+  last_used_at: z.string().nullable(),
+  container_status: z.enum([
+    "none",
+    "pending",
+    "provisioning",
+    "active",
+    "failed",
+  ]),
+  last_error: z.string().nullable(),
+});
+
+export type BridgeContainerStatus =
+  | "none"
+  | "pending"
+  | "provisioning"
+  | "active"
+  | "failed";
+
+export interface BridgeStatus {
+  tokenActive: boolean;
+  lastUsedAt: string | null;
+  containerStatus: BridgeContainerStatus;
+  lastError: string | null;
+}
+
+export type BridgeStatusPillTone = "muted" | "accent" | "success" | "danger";
+
+export interface BridgeStatusPill {
+  label: string;
+  tone: BridgeStatusPillTone;
+  showError: boolean;
+}
+
+/**
+ * Pure mapper from a `BridgeStatus` (or `null` when live backend disabled) to
+ * the four-state pill the MT5ConnectCard renders. Extracted so it can be unit
+ * tested without spinning up React Query.
+ */
+export function bridgeStatusToPill(
+  status: BridgeStatus | null | undefined,
+): BridgeStatusPill {
+  if (!status) {
+    return { label: "Not connected", tone: "muted", showError: false };
+  }
+  switch (status.containerStatus) {
+    case "active":
+      return { label: "Active", tone: "success", showError: false };
+    case "pending":
+    case "provisioning":
+      return { label: "Provisioning", tone: "accent", showError: false };
+    case "failed":
+      return { label: "Failed", tone: "danger", showError: true };
+    case "none":
+    default:
+      return { label: "Not connected", tone: "muted", showError: false };
+  }
+}
 
 const livePublicConnectionSchema = z.object({
   id: z.string(),
@@ -251,6 +312,38 @@ export function useUpdateBrokerConnection(): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: brokerKeys.all });
       queryClient.setQueryData(brokerKeys.detail(connection.connectionId), connection);
     },
+  });
+}
+
+/**
+ * Reads the per-user MT5 bridge provisioning status from
+ * `GET /me/bridge-status`. Drives the status pill on `MT5ConnectCard`.
+ *
+ * Returns `null` when the live backend is disabled or the user is unauthenticated
+ * (mock builds and pre-sign-in screens) so callers can render the
+ * "Not connected" state without a query error.
+ */
+export function useBridgeStatus(): UseQueryResult<BridgeStatus | null, Error> {
+  const accessToken = useAuthStore(selectAccessToken)?.value ?? null;
+  const live = shouldUseLive(accessToken);
+  return useQuery({
+    queryKey: brokerKeys.bridgeStatus,
+    queryFn: async () => {
+      if (!live) return null;
+      const raw = await authFetch<unknown>("/me/bridge-status", {
+        bearerToken: accessToken,
+      });
+      const parsed = liveBridgeStatusSchema.parse(raw);
+      return {
+        tokenActive: parsed.token_active,
+        lastUsedAt: parsed.last_used_at,
+        containerStatus: parsed.container_status,
+        lastError: parsed.last_error,
+      } satisfies BridgeStatus;
+    },
+    enabled: true,
+    staleTime: 15_000,
+    refetchInterval: live ? 30_000 : false,
   });
 }
 

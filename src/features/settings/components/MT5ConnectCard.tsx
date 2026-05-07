@@ -4,7 +4,12 @@ import { ChevronLeft, KeyRound, Link2, ServerCog, User } from "lucide-react-nati
 import { GlassCard, PressableScale, Text } from "@/design/primitives";
 import { font, palette, radius, spacing, type as typeTokens } from "@/design/tokens";
 import { useConnectMT5, MT5_SERVERS, type MT5Server } from "@/services/mt5";
-import { useDisconnectBroker } from "@/services/broker";
+import {
+  bridgeStatusToPill,
+  useBridgeStatus,
+  useDisconnectBroker,
+  type BridgeStatusPillTone,
+} from "@/services/broker";
 import type { BrokerConnection } from "@/types/broker";
 
 export interface MT5ConnectCardProps {
@@ -20,6 +25,9 @@ export function MT5ConnectCard({ connection }: MT5ConnectCardProps) {
 
   const { connect, isConnecting } = useConnectMT5();
   const disconnectMutation = useDisconnectBroker();
+  const bridgeStatusQuery = useBridgeStatus();
+  const pill = bridgeStatusToPill(bridgeStatusQuery.data ?? null);
+  const lastError = bridgeStatusQuery.data?.lastError ?? null;
 
   const isConnected = connection?.connected === true;
 
@@ -60,7 +68,26 @@ export function MT5ConnectCard({ connection }: MT5ConnectCardProps) {
               : "Connect MT5 to execute trades"}
           </Text>
         </View>
+        <View
+          accessibilityRole="text"
+          accessibilityLabel={`Execution bridge status: ${pill.label}`}
+          style={[
+            styles.pill,
+            { borderColor: pillBorder(pill.tone) },
+          ]}
+        >
+          <View style={[styles.pillDot, { backgroundColor: pillDot(pill.tone) }]} />
+          <Text variant="caption" weight="semibold" style={{ color: pillText(pill.tone) }}>
+            {pill.label}
+          </Text>
+        </View>
       </View>
+
+      {pill.showError && lastError ? (
+        <Text variant="caption" tone="danger" style={styles.errorLine}>
+          {lastError}
+        </Text>
+      ) : null}
 
       {isConnected ? (
         <View style={styles.statusBlock}>
@@ -230,6 +257,25 @@ function ServerSelector({ value, onChange }: ServerSelectorProps) {
   );
 }
 
+function pillText(tone: BridgeStatusPillTone): string {
+  if (tone === "success") return palette.status.success;
+  if (tone === "accent") return palette.accent.gold;
+  if (tone === "danger") return palette.status.danger;
+  return palette.fg.muted;
+}
+
+function pillDot(tone: BridgeStatusPillTone): string {
+  if (tone === "success") return palette.status.success;
+  if (tone === "accent") return palette.accent.gold;
+  if (tone === "danger") return palette.status.danger;
+  return palette.fg.subtle;
+}
+
+function pillBorder(tone: BridgeStatusPillTone): string {
+  if (tone === "muted") return palette.hairline;
+  return pillDot(tone);
+}
+
 const styles = StyleSheet.create({
   card: {
     gap: spacing.md,
@@ -238,6 +284,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
+  },
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    backgroundColor: palette.bg.elevated,
+  },
+  pillDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  errorLine: {
+    marginTop: -spacing.xs,
   },
   iconBadge: {
     width: 36,

@@ -123,9 +123,15 @@ async function safeJson(res: Response): Promise<unknown> {
 }
 
 export interface AuthFetchOptions {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   bearerToken?: string | null;
+  /**
+   * Extra request headers (e.g. `X-Intent: <jwt>` for the signed-intent
+   * approve/deny endpoints). Merged on top of the defaults; the auth + content
+   * headers cannot be overridden through this map.
+   */
+  extraHeaders?: Record<string, string>;
   fetchImpl?: typeof fetch;
   signal?: AbortSignal;
   /**
@@ -166,6 +172,16 @@ export async function authFetch<T>(
   }
   if (options.bearerToken && options.bearerToken.length > 0) {
     headers.authorization = `Bearer ${options.bearerToken}`;
+  }
+  if (options.extraHeaders) {
+    for (const [k, v] of Object.entries(options.extraHeaders)) {
+      // Don't allow overriding auth/content headers from extras.
+      const lower = k.toLowerCase();
+      if (lower === "authorization" || lower === "content-type" || lower === "accept") {
+        continue;
+      }
+      headers[k] = v;
+    }
   }
 
   const response = await fetchImpl(url, {
