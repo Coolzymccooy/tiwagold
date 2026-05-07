@@ -23,6 +23,7 @@
     "@expo-google-fonts/jetbrains-mono": "^0.4.1",
     "@google/genai": "^1.29.0",
     "@hookform/resolvers": "^3.10.0",
+    "@noble/curves": "^2.2.0",
     "@shopify/flash-list": "2.0.2",
     "@shopify/react-native-skia": "2.2.12",
     "@tanstack/react-query": "^5.99.0",
@@ -82,7 +83,7 @@
       "/app/"
     ],
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@shopify/flash-list|zustand))"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@shopify/flash-list|zustand|@noble))"
     ]
   }
 }
