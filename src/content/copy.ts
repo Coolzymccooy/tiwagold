@@ -93,6 +93,7 @@ export const COPY = {
   },
   tabs: {
     trades: "Trades",
+    pending: "Pending",
     analytics: "Analytics",
     copilot: "Copilot",
     settings: "Settings",
