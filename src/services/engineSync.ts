@@ -122,3 +122,81 @@ export function syncEnginePrefsAfterAuth(accessToken: string): void {
     // belt-and-braces .catch in case a future change throws.
   });
 }
+
+interface CloudEnginePrefsResponse {
+  conservative_enabled: boolean;
+  aggressive_enabled: boolean;
+  updated_at: string | null;
+}
+
+export type HydrateReason =
+  | "live_backend_disabled"
+  | "no_cloud_row"
+  | "cloud_get_failed";
+
+export interface HydrateResult {
+  ok: boolean;
+  reason?: HydrateReason;
+  conservative?: boolean;
+  aggressive?: boolean;
+}
+
+/**
+ * Cross-device hydration — Phase Q.
+ *
+ * On sign-in, fetch the cloud-side prefs. If the user has a real row
+ * (updated_at !== null), overwrite the local Zustand store so a fresh
+ * device install respects the user's last choice instead of clobbering it
+ * with the default "both engines on". When the cloud has no row yet
+ * (new account on this account ID), leave the local store alone — the
+ * subsequent syncEnginePrefsAfterAuth call will INSERT it.
+ *
+ * Failures are silent — the existing syncEnginePrefsAfterAuth path runs
+ * regardless, so a hydration miss just means the local state wins.
+ */
+export async function hydrateEnginePrefsFromCloud(args: {
+  bearerToken: string;
+}): Promise<HydrateResult> {
+  if (!isLiveBackendEnabled()) {
+    return { ok: false, reason: "live_backend_disabled" };
+  }
+  let raw: CloudEnginePrefsResponse;
+  try {
+    raw = await authFetch<CloudEnginePrefsResponse>("/me/engine-prefs", {
+      method: "GET",
+      bearerToken: args.bearerToken,
+    });
+  } catch {
+    return { ok: false, reason: "cloud_get_failed" };
+  }
+  if (raw.updated_at === null) {
+    return { ok: false, reason: "no_cloud_row" };
+  }
+  const cons = Boolean(raw.conservative_enabled);
+  const agg = Boolean(raw.aggressive_enabled);
+  // Defensive: don't write an "all-engines-off" state into local store —
+  // cloud rejects that on PUT, so a row with both=false would be data corruption.
+  // Skip the write and fall through to the regular push.
+  if (!cons && !agg) {
+    return { ok: false, reason: "no_cloud_row" };
+  }
+  useTradingPrefsStore.getState().setEngineEnabled("conservative", cons);
+  useTradingPrefsStore.getState().setEngineEnabled("aggressive", agg);
+  return { ok: true, conservative: cons, aggressive: agg };
+}
+
+/**
+ * Hydrate-then-sync helper for the sign-in / sign-up onSuccess hook.
+ * Awaits the GET so any cloud-side row overwrites the local store BEFORE
+ * the push runs (otherwise we'd push the stale local state and clobber
+ * the cloud).
+ */
+export async function reconcileEnginePrefsAfterAuth(
+  accessToken: string,
+): Promise<void> {
+  await hydrateEnginePrefsFromCloud({ bearerToken: accessToken });
+  // After hydration, push the now-current local state back. If hydration
+  // succeeded the values match (no-op write); if it failed, we're back to
+  // the pre-Phase-Q behaviour of pushing local-as-truth.
+  syncEnginePrefsAfterAuth(accessToken);
+}

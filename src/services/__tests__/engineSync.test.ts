@@ -7,7 +7,12 @@ jest.mock("@/services/liveBackend", () => ({
   isLiveBackendEnabled: () => mockIsLiveBackendEnabled(),
 }));
 
-import { syncEnginePrefsToCloud, syncEnginePrefsAfterAuth } from "@/services/engineSync";
+import {
+  syncEnginePrefsToCloud,
+  syncEnginePrefsAfterAuth,
+  hydrateEnginePrefsFromCloud,
+  reconcileEnginePrefsAfterAuth,
+} from "@/services/engineSync";
 import { useTradingPrefsStore } from "@/state/tradingPrefsStore";
 import { useAuthStore } from "@/state/authStore";
 
@@ -125,5 +130,146 @@ describe("syncEnginePrefsAfterAuth", () => {
     syncEnginePrefsAfterAuth("ACCESS");
     await Promise.resolve();
     expect(mockAuthFetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("hydrateEnginePrefsFromCloud", () => {
+  test("overwrites local store when cloud has a real row", async () => {
+    mockIsLiveBackendEnabled.mockReturnValue(true);
+    mockAuthFetch.mockResolvedValueOnce({
+      conservative_enabled: false,
+      aggressive_enabled: true,
+      updated_at: "2026-05-07T12:00:00Z",
+    });
+
+    const result = await hydrateEnginePrefsFromCloud({ bearerToken: "ACCESS" });
+    expect(result.ok).toBe(true);
+    expect(result.conservative).toBe(false);
+    expect(result.aggressive).toBe(true);
+
+    const local = useTradingPrefsStore.getState().engineEnabled;
+    expect(local.conservative).toBe(false);
+    expect(local.aggressive).toBe(true);
+  });
+
+  test("leaves local store untouched when cloud has no row (updated_at=null)", async () => {
+    mockIsLiveBackendEnabled.mockReturnValue(true);
+    // Local default: both true
+    useTradingPrefsStore.setState((s) => ({
+      ...s,
+      engineEnabled: { conservative: true, aggressive: true },
+    }));
+    mockAuthFetch.mockResolvedValueOnce({
+      conservative_enabled: true,
+      aggressive_enabled: true,
+      updated_at: null,
+    });
+
+    const result = await hydrateEnginePrefsFromCloud({ bearerToken: "ACCESS" });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("no_cloud_row");
+
+    const local = useTradingPrefsStore.getState().engineEnabled;
+    expect(local).toEqual({ conservative: true, aggressive: true });
+  });
+
+  test("ignores cloud row that asserts both engines off (corrupt state)", async () => {
+    mockIsLiveBackendEnabled.mockReturnValue(true);
+    useTradingPrefsStore.setState((s) => ({
+      ...s,
+      engineEnabled: { conservative: true, aggressive: true },
+    }));
+    mockAuthFetch.mockResolvedValueOnce({
+      conservative_enabled: false,
+      aggressive_enabled: false,
+      updated_at: "2026-05-07T12:00:00Z",
+    });
+
+    const result = await hydrateEnginePrefsFromCloud({ bearerToken: "ACCESS" });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("no_cloud_row");
+    // Local untouched
+    expect(useTradingPrefsStore.getState().engineEnabled).toEqual({
+      conservative: true,
+      aggressive: true,
+    });
+  });
+
+  test("returns cloud_get_failed on network error", async () => {
+    mockIsLiveBackendEnabled.mockReturnValue(true);
+    mockAuthFetch.mockRejectedValueOnce(new Error("ECONNRESET"));
+    const result = await hydrateEnginePrefsFromCloud({ bearerToken: "ACCESS" });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("cloud_get_failed");
+  });
+
+  test("no-op in mock mode", async () => {
+    mockIsLiveBackendEnabled.mockReturnValue(false);
+    const result = await hydrateEnginePrefsFromCloud({ bearerToken: "ACCESS" });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("live_backend_disabled");
+    expect(mockAuthFetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("reconcileEnginePrefsAfterAuth", () => {
+  test("hydrate THEN push so cloud row wins over stale local state", async () => {
+    mockIsLiveBackendEnabled.mockReturnValue(true);
+    // Local says both on; cloud says aggressive=false. After reconcile,
+    // local should be aggressive=false AND the push should reflect that.
+    useTradingPrefsStore.setState((s) => ({
+      ...s,
+      engineEnabled: { conservative: true, aggressive: true },
+    }));
+    mockAuthFetch
+      // GET: cloud says aggressive=false
+      .mockResolvedValueOnce({
+        conservative_enabled: true,
+        aggressive_enabled: false,
+        updated_at: "2026-05-07T12:00:00Z",
+      })
+      // PUT echoes back
+      .mockResolvedValueOnce({ ok: true });
+
+    await reconcileEnginePrefsAfterAuth("ACCESS");
+
+    expect(useTradingPrefsStore.getState().engineEnabled).toEqual({
+      conservative: true,
+      aggressive: false,
+    });
+
+    expect(mockAuthFetch).toHaveBeenCalledTimes(2);
+    const putCall = mockAuthFetch.mock.calls[1]! as [string, Record<string, unknown>];
+    expect(putCall[0]).toBe("/me/engine-prefs");
+    expect((putCall[1] as { method: string }).method).toBe("PUT");
+    expect((putCall[1] as { body: unknown }).body).toEqual({
+      conservative_enabled: true,
+      aggressive_enabled: false,
+    });
+  });
+
+  test("falls back to local-as-truth push when GET fails", async () => {
+    mockIsLiveBackendEnabled.mockReturnValue(true);
+    useTradingPrefsStore.setState((s) => ({
+      ...s,
+      engineEnabled: { conservative: true, aggressive: true },
+    }));
+    mockAuthFetch
+      .mockRejectedValueOnce(new Error("503"))
+      .mockResolvedValueOnce({ ok: true });
+
+    await reconcileEnginePrefsAfterAuth("ACCESS");
+
+    // Local untouched
+    expect(useTradingPrefsStore.getState().engineEnabled).toEqual({
+      conservative: true,
+      aggressive: true,
+    });
+    // PUT still ran
+    const putCall = mockAuthFetch.mock.calls[1]! as [string, Record<string, unknown>];
+    expect((putCall[1] as { body: unknown }).body).toEqual({
+      conservative_enabled: true,
+      aggressive_enabled: true,
+    });
   });
 });
