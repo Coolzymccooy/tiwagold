@@ -11,6 +11,7 @@ import {
   type BridgeStatusPillTone,
 } from "@/services/broker";
 import type { BrokerConnection } from "@/types/broker";
+import { RotateBridgeTokenButton } from "./RotateBridgeTokenButton";
 
 export interface MT5ConnectCardProps {
   connection: BrokerConnection | undefined;
@@ -213,6 +214,8 @@ export function MT5ConnectCard({ connection }: MT5ConnectCardProps) {
           </Text>
         </PressableScale>
       )}
+
+      <RotateBridgeTokenButton />
     </GlassCard>
   );
 }
