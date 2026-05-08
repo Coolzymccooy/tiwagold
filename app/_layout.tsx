@@ -22,12 +22,14 @@ import {
 import { palette } from "@/design/tokens";
 import { useAuthRouting } from "@/hooks/useAuthRouting";
 import { useEnginePrefsCloudSync } from "@/services/engineSync";
+import { usePushNotificationDeepLinks } from "@/services/pushDeepLinks";
 
 void SplashScreen.preventAutoHideAsync();
 
 function RootStack() {
   useAuthRouting();
   useEnginePrefsCloudSync();
+  usePushNotificationDeepLinks();
   return (
     <Stack
       screenOptions={{
