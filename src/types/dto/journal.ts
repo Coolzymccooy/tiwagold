@@ -19,14 +19,17 @@ export const journalTradeRowSchema = z.object({
   direction: z.enum(["BUY", "SELL"]),
   // Source of truth for engineTier on the mobile side; falls back to
   // substring inference on setupType when the cloud doesn't surface it.
-  // `nullish` (accepts null AND undefined) handles three transitional shapes:
+  // Accepted shapes (any of which must NOT poison the whole journal):
   //   • field missing entirely (legacy deploy without the projection)
   //   • field present but null (legacy row + new projection that forwards
   //     the raw column instead of coalescing)
-  //   • field present with a real enum value (current behaviour)
-  // Without `.nullish()`, a single row with `mode: null` would fail the
-  // whole journal payload and the journal/analytics views couldn't load.
-  mode: z.enum(["conservative", "aggressive"]).nullish(),
+  //   • field present with a real enum value: "conservative" | "aggressive"
+  //   • field present with an out-of-band cloud value (e.g. "manual_import"
+  //     for trades imported from broker history). Treated as "unknown" by
+  //     downstream mappers — see journalToTrades. Without this lenient
+  //     schema, a single row with mode: "manual_import" would fail the
+  //     whole journal payload and break Trades + Analytics tabs.
+  mode: z.string().nullish(),
   setupType: z.string().nullable().optional(),
   state: z.string(),
   executionState: journalExecutionStateSchema.optional(),
