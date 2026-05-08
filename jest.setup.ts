@@ -23,3 +23,9 @@ jest.mock("expo-haptics", () => ({
     Error: "error",
   },
 }));
+
+jest.mock("expo-notifications", () => ({
+  getPermissionsAsync: jest.fn(async () => ({ granted: true, canAskAgain: true })),
+  requestPermissionsAsync: jest.fn(async () => ({ granted: true })),
+  getExpoPushTokenAsync: jest.fn(async () => ({ data: "ExponentPushToken[mock]" })),
+}));
