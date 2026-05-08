@@ -21,7 +21,7 @@ import {
   registerExpoPushTokenWithCloud,
   clearExpoPushTokenFromCloud,
 } from "./expoPushToken";
-import { syncEnginePrefsAfterAuth } from "./engineSync";
+import { reconcileEnginePrefsAfterAuth } from "./engineSync";
 
 export const authKeys = {
   me: ["user", "me"] as const,
@@ -204,11 +204,15 @@ function registerPushTokenAfterAuth(accessToken: string): void {
       // The service swallows errors and returns `{ ok: false }`, but defend
       // against rejected promises just in case a future change breaks that.
     });
-  // Phase N2 — push the user's persisted engine prefs (or the default both-on)
-  // so the cloud's user_engine_prefs row is current the moment they're authed.
-  // gold-monitor's fan-out reads that row to decide whether they qualify for
-  // a new signal.
-  syncEnginePrefsAfterAuth(accessToken);
+  // Phase N2 + Q — first hydrate engine prefs from the cloud (so a fresh
+  // install on a new device picks up the user's last toggle instead of
+  // overwriting it with the default both-on), then push the resulting state
+  // back so the row reflects the device's view. gold-monitor's fan-out
+  // reads that row to decide whether to enqueue a signal for this user.
+  reconcileEnginePrefsAfterAuth(accessToken).catch(() => {
+    // reconcile already swallows internal failures; defend against any
+    // future change that throws.
+  });
 }
 
 export function useAuthSession(
