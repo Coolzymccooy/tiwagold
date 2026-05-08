@@ -22,6 +22,7 @@ import {
   clearExpoPushTokenFromCloud,
 } from "./expoPushToken";
 import { reconcileEnginePrefsAfterAuth } from "./engineSync";
+import { registerDeviceKey } from "./liveSignedIntent";
 
 export const authKeys = {
   me: ["user", "me"] as const,
@@ -212,6 +213,15 @@ function registerPushTokenAfterAuth(accessToken: string): void {
   reconcileEnginePrefsAfterAuth(accessToken).catch(() => {
     // reconcile already swallows internal failures; defend against any
     // future change that throws.
+  });
+  // Phase S — eager P-256 keygen + /me/keys/register so the user's first
+  // Approve tap doesn't pay ~150ms of crypto + round-trip on the critical
+  // path. registerDeviceKey is idempotent (checks a SecureStore flag) so
+  // re-running it on every auth is free.
+  registerDeviceKey({ bearerToken: accessToken }).catch(() => {
+    // Internal errors are wrapped and rethrown as LiveSignedIntentError;
+    // swallow here — the lazy path inside signApprovalIntent will retry
+    // on first approval if the eager registration didn't land.
   });
 }
 
