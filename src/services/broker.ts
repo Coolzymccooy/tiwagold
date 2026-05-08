@@ -316,6 +316,57 @@ export function useUpdateBrokerConnection(): UseMutationResult<
 }
 
 /**
+ * Rotates the user's per-user MT5 bridge token via POST /me/bridge-token/rotate.
+ * The cloud auto-revokes the previous token (one-active-per-user invariant)
+ * and returns the new plaintext value ONCE; it's sha256-hashed at rest, so
+ * this is the only opportunity to capture it. Callers must surface the token
+ * to the user (or admin) immediately and never persist it locally.
+ *
+ * Mutation result `{ token }` — 64-char hex string. On error, the mutation
+ * surfaces the underlying `LiveBackendHttpError`.
+ */
+const liveBridgeTokenRotateSchema = z.object({
+  token: z.string().regex(/^[0-9a-f]{64}$/),
+});
+
+export interface RotateBridgeTokenResult {
+  token: string;
+}
+
+export function useRotateBridgeToken(): UseMutationResult<
+  RotateBridgeTokenResult,
+  Error,
+  void
+> {
+  const queryClient = useQueryClient();
+  const accessToken = useAuthStore(selectAccessToken)?.value ?? null;
+  return useMutation({
+    mutationFn: async () => {
+      if (!shouldUseLive(accessToken)) {
+        // Mock builds: produce a deterministic-looking 64-hex string so
+        // dev surfaces can render and copy without hitting the cloud.
+        return simulateFetch<RotateBridgeTokenResult>(() => ({
+          token: "0".repeat(64),
+        }));
+      }
+      const raw = await authFetch<unknown>("/me/bridge-token/rotate", {
+        method: "POST",
+        bearerToken: accessToken,
+      });
+      const parsed = liveBridgeTokenRotateSchema.parse(raw);
+      return { token: parsed.token };
+    },
+    onSuccess: () => {
+      // Bridge status moves from `provisioning` → `active` only after the
+      // server-side container reports it picked up the new token, but the
+      // mobile pill should re-poll immediately so the user sees the
+      // intermediate state.
+      queryClient.invalidateQueries({ queryKey: brokerKeys.bridgeStatus });
+    },
+  });
+}
+
+/**
  * Reads the per-user MT5 bridge provisioning status from
  * `GET /me/bridge-status`. Drives the status pill on `MT5ConnectCard`.
  *
