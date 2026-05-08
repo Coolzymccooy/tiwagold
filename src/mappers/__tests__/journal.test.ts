@@ -208,6 +208,25 @@ describe("parseJournalDto — mode field tolerance", () => {
     });
     expect(result.trades).toHaveLength(payload.trades.length);
   });
+
+  test("accepts cloud mode values outside the conservative/aggressive enum (e.g. manual_import)", () => {
+    // Regression for the live journal failure: rows with mode=manual_import
+    // (broker-history imports) used to fail the whole zod parse, which broke
+    // the Trades + Analytics tabs. Schema is now z.string().nullish() and
+    // unknown values fall through to setupType-based inference in
+    // resolveMode/resolveEngineTier downstream.
+    const payload = fixture();
+    const rowWithImport = {
+      ...payload.trades[0]!,
+      mode: "manual_import" as unknown as "aggressive",
+    };
+    const result = parseJournalDto({
+      ...payload,
+      trades: [rowWithImport, ...payload.trades.slice(1)],
+    });
+    expect(result.trades).toHaveLength(payload.trades.length);
+    expect(result.trades[0]?.mode).toBe("manual_import");
+  });
 });
 
 describe("journalToTrades", () => {
