@@ -21,11 +21,13 @@ import {
 } from "@expo-google-fonts/jetbrains-mono";
 import { palette } from "@/design/tokens";
 import { useAuthRouting } from "@/hooks/useAuthRouting";
+import { useEnginePrefsCloudSync } from "@/services/engineSync";
 
 void SplashScreen.preventAutoHideAsync();
 
 function RootStack() {
   useAuthRouting();
+  useEnginePrefsCloudSync();
   return (
     <Stack
       screenOptions={{
