@@ -22,19 +22,32 @@ After this runbook passes once, every subsequent paying user is fully self-serve
 
 ## Pre-flight (one-off, do these once before the first test)
 
-### P1. Whitelist your cloud-api host in MT5's allowed-WebRequest URLs
+### P1. ~~Whitelist WebRequest~~ — N/A in 1.0.1
 
-The EA inside the user's container will call `https://tiwa.tiwaton.co.uk/...` from MT5. By default MT5 blocks `WebRequest`. The execution-image's MT5 install needs the cloud host whitelisted.
+In image **1.0.1+** (current default), the EA does **not** call `WebRequest()`. A
+small Linux side-car (`/opt/tiwa/tiwa-sidecar`, single static Go binary) runs
+in the same container as Wine + MT5 and translates file IPC into cloud HTTP:
 
-This is set inside MT5's GUI: **Tools → Options → Expert Advisors tab → "Allow WebRequest for listed URL"**, add `https://tiwa.tiwaton.co.uk`.
-
-For our Wine-headless containers, that GUI step happens via the `start.ini` written by `entrypoint.sh`. Confirm `entrypoint.sh` has a section that pre-injects this whitelist into MT5's config — if it doesn't, the EA's first WebRequest will silently 404 and the provisioning healthcheck will pass (MT5 process alive) but no trades will ever execute.
-
-```sh
-ssh root@168.119.244.150 "grep -i webrequest /opt/tiwa/execution-image/provision.sh /opt/tiwa/execution-image-build/entrypoint.sh 2>&1 || echo 'WebRequest whitelist NOT auto-injected — needs adding to entrypoint.sh'"
+```
+EA  ──writes──►  Common\Files\tiwa-bridge\outbox\<id>.result.json
+                 Common\Files\tiwa-bridge\outbox\heartbeat.json
+                                    │
+                                    ▼
+                          tiwa-sidecar (Linux, polls outbox/)
+                                    │
+                                    ▼ HTTPS (no whitelist needed)
+                            cloud-api  /api/mt5/heartbeat
+                                       /api/mt5/execution-requests/<id>/{pickup,result}
 ```
 
-If the grep returns "NOT auto-injected", **stop here and patch `entrypoint.sh`** to write the WebRequest whitelist into MT5's `Common\WebRequest` section in `start.ini` before launching MT5. (This is one of the items deferred from the "strip Node daemon" change — the EA path was assumed to work but never validated.)
+Inbound side: the side-car polls `GET /api/mt5/execution-requests` every
+`POLL_INTERVAL_MS` and writes `<id>.json` files into `…\inbox\` for the EA to
+pick up. No MT5 GUI seed required, no encrypted `Config/settings.ini` to bake.
+
+If you're on the legacy 1.0.0 image (only relevant for nodes provisioned before
+the 1.0.1 rollout), the original WebRequest whitelist instructions apply — but
+the recommended fix is to bump the image tag in
+`/opt/tiwa/templates/docker-compose.yml` to 1.0.1 and re-provision.
 
 ### P2. Have a test broker account ready
 
@@ -116,7 +129,7 @@ ssh root@168.119.244.150 "
 ```
 
 ### Step 3 — Trigger a Tiwa signal (or wait for the next one)
-
+you 
 The cloud's `gold-monitor` cron emits signals on its schedule (typically hourly). To not wait:
 
 **Option A: trigger manually** if the cloud has an admin endpoint for it (check `apps/cloud-api/src/routes/admin/`).
@@ -178,8 +191,8 @@ Within 10 seconds of step 5, the mobile app's TanStack Query polling should pick
 |---|---|---|
 | `provision fail user=... exit=2: container did not start` | Docker compose template path wrong | `ssh root@... 'cat /opt/tiwa/templates/docker-compose.yml'` — verify env interpolation |
 | `provision fail user=... exit=3: healthcheck never passed` | MT5 didn't start under Wine | `docker compose -f /opt/tiwa-bridges/<user>/docker-compose.yml logs` — usually broker creds |
-| Container healthy but no trades execute after approval | EA's WebRequest blocked | check pre-flight P1 — whitelist `https://tiwa.tiwaton.co.uk` in MT5 config |
-| EA executes order but cloud never sees brokerTicket | EA's `WebRequest` POST to cloud fails | network egress from container blocked, or wrong URL in EA inputs |
+| Container healthy but no trades execute after approval | side-car not running, or EA can't read inbox | `docker exec <user> pgrep -f tiwa-sidecar` should return a PID; check entrypoint log for "tiwa-sidecar exited immediately" |
+| EA executes order but cloud never sees brokerTicket | side-car can't reach cloud-api, or outbox file write failed | `docker exec <user> ls -la "$WINE_MT5_DIR/Common/Files/tiwa-bridge/outbox/"` — if files pile up, side-car can't POST; check `docker logs <user> 2>&1 \| grep sidecar` |
 | Approve tap returns 401 from cloud | Signing key not warmed | sign out + back in (Phase S bootstraps signing key on `/auth/login`) |
 | Approve tap returns 403 from cloud | Signed-intent JWT signature mismatch | clock skew between phone + cloud (>5min); fix phone time |
 
