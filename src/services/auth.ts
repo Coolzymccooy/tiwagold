@@ -17,6 +17,10 @@ import type {
 import type { UserProfile } from "@/types/user";
 import { createId, nowIso, simulateFetch } from "./client";
 import { authFetch, isLiveBackendEnabled } from "./liveBackend";
+import {
+  registerExpoPushTokenWithCloud,
+  clearExpoPushTokenFromCloud,
+} from "./expoPushToken";
 
 export const authKeys = {
   me: ["user", "me"] as const,
@@ -148,8 +152,9 @@ export function useSignIn(): UseMutationResult<
         user: { ...MOCK_USER, email: email || MOCK_USER.email },
       }));
     },
-    onSuccess: ({ user }) => {
+    onSuccess: ({ user, session }) => {
       queryClient.setQueryData(authKeys.me, user);
+      void registerPushTokenAfterAuth(session.access.value);
     },
   });
 }
@@ -178,10 +183,26 @@ export function useSignUp(): UseMutationResult<
         user: { ...MOCK_USER, email: email || MOCK_USER.email, displayName },
       }));
     },
-    onSuccess: ({ user }) => {
+    onSuccess: ({ user, session }) => {
       queryClient.setQueryData(authKeys.me, user);
+      void registerPushTokenAfterAuth(session.access.value);
     },
   });
+}
+
+/**
+ * Fire-and-forget push-token registration. Lives outside the mutation
+ * onSuccess callback so failures (permission denied, no project id, network)
+ * never cascade into auth failure. Skipped entirely in mock builds — there's
+ * no live `/me/*` endpoint to PUT to.
+ */
+function registerPushTokenAfterAuth(accessToken: string): void {
+  if (!isLiveBackendEnabled()) return;
+  registerExpoPushTokenWithCloud({ bearerToken: accessToken })
+    .catch(() => {
+      // The service swallows errors and returns `{ ok: false }`, but defend
+      // against rejected promises just in case a future change breaks that.
+    });
 }
 
 export function useAuthSession(
@@ -247,8 +268,20 @@ export function useSignOut(): UseMutationResult<void, Error, void> {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
+      const accessToken = useAuthStore.getState().session?.access?.value;
       const refreshToken = useAuthStore.getState().session?.refresh?.value;
       if (isLiveBackendEnabled() && refreshToken) {
+        // Clear the device's push token from the cloud BEFORE revoking the
+        // session — once the access token is dead, we can't authenticate the
+        // PUT. Best-effort: failures don't block sign-out.
+        if (accessToken) {
+          try {
+            await clearExpoPushTokenFromCloud({ bearerToken: accessToken });
+          } catch {
+            // ignore — clearExpoPushTokenFromCloud already swallows network
+            // errors; this catch is paranoia.
+          }
+        }
         // Best-effort revoke. Mobile state is cleared either way.
         try {
           await authFetch<unknown>("/auth/sign-out", {
