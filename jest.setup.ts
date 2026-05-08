@@ -30,3 +30,8 @@ jest.mock("expo-notifications", () => ({
   getExpoPushTokenAsync: jest.fn(async () => ({ data: "ExponentPushToken[mock]" })),
   addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
 }));
+
+jest.mock("expo-clipboard", () => ({
+  setStringAsync: jest.fn(async () => true),
+  getStringAsync: jest.fn(async () => ""),
+}));
