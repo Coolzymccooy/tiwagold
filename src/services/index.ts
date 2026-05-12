@@ -59,6 +59,10 @@ export {
   useCopilotSuggestedPrompts,
   useSendCopilotMessage,
   useCopilotChat,
+  fetchCopilotSessionLive,
+  fetchCopilotConversationsLive,
+  fetchCopilotPromptsLive,
+  sendCopilotChatLive,
 } from "./copilot";
 export type { SendCopilotMessageInput } from "./copilot";
 
