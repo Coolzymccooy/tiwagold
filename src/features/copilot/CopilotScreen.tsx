@@ -2,6 +2,7 @@ import { StyleSheet, View } from "react-native";
 import { Screen } from "@/design/primitives/Screen";
 import { COPY } from "@/content/copy";
 import { useCopilot } from "./hooks";
+import { useCopilotAutoPlay } from "./useCopilotAutoPlay";
 import { Composer } from "./components/Composer";
 import { CopilotHeader } from "./components/CopilotHeader";
 import { CopilotLoadingState } from "./components/CopilotLoadingState";
@@ -11,6 +12,7 @@ import { CopilotSuccessState } from "./components/CopilotSuccessState";
 
 export function CopilotScreen() {
   const copilot = useCopilot();
+  useCopilotAutoPlay(copilot.view);
 
   return (
     <Screen withKeyboardAvoid padded={false} edges={["top"]}>

@@ -17,6 +17,7 @@ import {
   RiskOptionRow,
   SectionCard,
   SignOutButton,
+  VoiceSettingsCard,
 } from "./components";
 import {
   useDeleteAccountAction,
@@ -131,6 +132,8 @@ export function SettingsScreen() {
             />
           ))}
         </SectionCard>
+
+        <VoiceSettingsCard />
 
         <SectionCard title={COPY.settings.sections.legal}>
           {view.legal.map((row, index) => (

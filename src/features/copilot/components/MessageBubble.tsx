@@ -11,6 +11,7 @@ import { GlassCard } from "@/design/primitives/GlassCard";
 import { Text } from "@/design/primitives/Text";
 import { duration, easing, palette, radius, spacing } from "@/design/tokens";
 import type { CopilotMessageRow } from "../types";
+import { SpeakButton } from "./SpeakButton";
 
 export interface MessageBubbleProps {
   row: CopilotMessageRow;
@@ -76,6 +77,9 @@ function AssistantBubble({ row }: { row: CopilotMessageRow }) {
                 <CitationChip key={label} label={label} />
               ))}
             </View>
+          ) : null}
+          {row.status === "complete" && row.content.length > 0 ? (
+            <SpeakButton text={row.content} />
           ) : null}
           <MessageMeta row={row} />
         </View>
