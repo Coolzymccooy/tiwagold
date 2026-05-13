@@ -10,3 +10,4 @@ export { RiskOptionRow } from "./RiskOptionRow";
 export { LegalRow } from "./LegalRow";
 export { SignOutButton } from "./SignOutButton";
 export { DangerZoneCard } from "./DangerZoneCard";
+export { VoiceSettingsCard } from "./VoiceSettingsCard";

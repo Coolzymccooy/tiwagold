@@ -220,6 +220,83 @@ export async function authFetch<T>(
   return (await response.json()) as T;
 }
 
+export interface AuthFetchBinaryResult {
+  body: ArrayBuffer;
+  contentType: string;
+  responseHeaders: Headers;
+}
+
+/**
+ * Binary sibling of {@link authFetch}. Same auth + refresh contract, but
+ * returns the raw response body as an `ArrayBuffer` plus the response headers
+ * so callers can read e.g. `X-TTS-Provider`. Used for the `/voice/speak`
+ * audio download.
+ */
+export async function authFetchBinary(
+  path: string,
+  options: AuthFetchOptions = {},
+): Promise<AuthFetchBinaryResult> {
+  const config = readLiveBackendConfig();
+  if (!config.enabled) throw new LiveBackendDisabledError();
+  if (!config.baseUrl) throw new LiveBackendUnconfiguredError("PERSONA_OVERSEER_BASE_URL");
+
+  const url = path.startsWith("http") ? path : `${config.baseUrl}${path}`;
+  const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  const method = options.method ?? "GET";
+  const headers: Record<string, string> = { accept: "audio/*" };
+  if (options.body !== undefined) headers["content-type"] = "application/json";
+  if (options.bearerToken && options.bearerToken.length > 0) {
+    headers.authorization = `Bearer ${options.bearerToken}`;
+  }
+  if (options.extraHeaders) {
+    for (const [k, v] of Object.entries(options.extraHeaders)) {
+      const lower = k.toLowerCase();
+      if (lower === "authorization" || lower === "content-type" || lower === "accept") {
+        continue;
+      }
+      headers[k] = v;
+    }
+  }
+
+  const response = await fetchImpl(url, {
+    method,
+    headers,
+    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    signal: options.signal,
+  });
+
+  if (
+    response.status === 401 &&
+    !options.skipAutoRefresh &&
+    options.bearerToken &&
+    options.bearerToken.length > 0
+  ) {
+    const refreshedAccessToken = await tryRefreshAccessToken(fetchImpl);
+    if (refreshedAccessToken) {
+      return authFetchBinary(path, {
+        ...options,
+        bearerToken: refreshedAccessToken,
+        skipAutoRefresh: true,
+      });
+    }
+  }
+
+  if (!response.ok) {
+    const body = await safeJson(response);
+    throw new LiveBackendHttpError(
+      response.status,
+      `Auth backend ${response.status} on ${path}`,
+      body,
+    );
+  }
+
+  return {
+    body: await response.arrayBuffer(),
+    contentType: response.headers.get("content-type") ?? "application/octet-stream",
+    responseHeaders: response.headers,
+  };
+}
+
 const refreshSessionResponseSchema = z.object({
   user: z.object({
     id: z.string(),
