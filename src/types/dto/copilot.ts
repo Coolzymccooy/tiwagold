@@ -66,7 +66,7 @@ export interface CopilotAgentRunDto {
   startedAt: string;
   completedAt?: string | null;
   synthesisReport?: string | null;
-  agents: Array<{
+  agents: {
     taskIndex: number;
     name: string;
     status: string;
@@ -77,7 +77,7 @@ export interface CopilotAgentRunDto {
     milestones: string[];
     resultText?: string | null;
     error?: string | null;
-  }>;
+  }[];
 }
 
 export interface CopilotChatRunEnvelopeDto {

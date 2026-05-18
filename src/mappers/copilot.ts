@@ -1,4 +1,5 @@
 import type {
+  CopilotAgentRunDto,
   CopilotChatRequestDto,
   CopilotChatResponseChunkDto,
   CopilotCitationDto,
@@ -8,6 +9,8 @@ import type {
   CopilotSuggestedPromptDto,
 } from "@/types/dto";
 import type {
+  CopilotAgentRun,
+  CopilotAgentRunTask,
   CopilotChatRequest,
   CopilotChatResponseChunk,
   CopilotCitation,
@@ -121,5 +124,30 @@ export function copilotChatChunkFromDto(
     deltaText: dto.delta_text,
     status: dto.status,
     citations: dto.citations?.map(copilotCitationFromDto),
+  };
+}
+
+export function mapAgentRunDto(dto: CopilotAgentRunDto): CopilotAgentRun {
+  return {
+    id: dto.id,
+    status: dto.status as CopilotAgentRun["status"],
+    failureReason: dto.failureReason ?? undefined,
+    channel: dto.channel as CopilotAgentRun["channel"],
+    prompt: dto.prompt,
+    startedAt: dto.startedAt,
+    completedAt: dto.completedAt ?? undefined,
+    synthesisReport: dto.synthesisReport ?? undefined,
+    agents: dto.agents.map<CopilotAgentRunTask>((a) => ({
+      taskIndex: a.taskIndex,
+      name: a.name,
+      status: a.status as CopilotAgentRunTask["status"],
+      summary: a.summary ?? undefined,
+      durationMs: a.durationMs ?? undefined,
+      iterations: a.iterations ?? undefined,
+      apiCalls: a.apiCalls ?? undefined,
+      milestones: a.milestones ?? [],
+      resultText: a.resultText ?? undefined,
+      error: a.error ?? undefined,
+    })),
   };
 }
