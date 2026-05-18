@@ -15,6 +15,7 @@ export interface CopilotMessage {
   at: string;
   status: CopilotStatus;
   citations?: CopilotCitation[];
+  runId?: string;
 }
 
 export interface CopilotSession {
@@ -44,6 +45,7 @@ export interface CopilotChatRequest {
 }
 
 export interface CopilotChatResponseChunk {
+  kind: "chunk";
   conversationId: string;
   messageId: string;
   deltaText: string;
@@ -62,3 +64,58 @@ export interface CopilotSuggestedPrompt {
   label: string;
   prompt: string;
 }
+
+export type CopilotAgentRunStatus =
+  | "planning"
+  | "running"
+  | "synthesizing"
+  | "completed"
+  | "failed"
+  | "aborted";
+
+export type CopilotAgentTaskStatus = "queued" | "running" | "completed" | "failed";
+
+export type CopilotRunChannel = "telegram" | "copilot" | "mcp";
+
+export interface CopilotAgentRunTask {
+  taskIndex: number;
+  name: string;
+  status: CopilotAgentTaskStatus;
+  summary?: string;
+  durationMs?: number;
+  iterations?: number;
+  apiCalls?: number;
+  milestones: string[];
+  resultText?: string;
+  error?: string;
+}
+
+export interface CopilotAgentRun {
+  id: string;
+  status: CopilotAgentRunStatus;
+  failureReason?: string;
+  channel: CopilotRunChannel;
+  prompt: string;
+  startedAt: string;
+  completedAt?: string;
+  agents: CopilotAgentRunTask[];
+  synthesisReport?: string;
+}
+
+/**
+ * v2 chat response can be either a single-bubble message OR a runId envelope
+ * pointing to a multi-agent dispatch. Discriminated by `kind`.
+ *
+ * The existing single-bubble `CopilotChatResponseChunk` type already has
+ * `conversationId`, `messageId`, `deltaText`, `status`. The "run" branch
+ * carries a runId the client polls via useCopilotAgentRun.
+ */
+export interface CopilotChatRunEnvelope {
+  kind: "run";
+  conversationId: string;
+  runId: string;
+  placeholderMessageId: string;
+  status: "running";
+}
+
+export type CopilotChatV2Response = CopilotChatResponseChunk | CopilotChatRunEnvelope;

@@ -12,6 +12,7 @@ import { Text } from "@/design/primitives/Text";
 import { duration, easing, palette, radius, spacing } from "@/design/tokens";
 import type { CopilotMessageRow } from "../types";
 import { SpeakButton } from "./SpeakButton";
+import { AgentRunMessageBubble } from "./AgentRunMessageBubble";
 
 export interface MessageBubbleProps {
   row: CopilotMessageRow;
@@ -29,6 +30,10 @@ export function MessageBubble({ row }: MessageBubbleProps) {
         </View>
       </View>
     );
+  }
+
+  if (row.runId) {
+    return <AgentRunMessageBubble row={row} />;
   }
 
   return <AssistantBubble row={row} />;

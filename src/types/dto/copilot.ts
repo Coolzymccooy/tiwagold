@@ -55,3 +55,35 @@ export interface CopilotChatResponseChunkDto {
   status: CopilotStatusDto;
   citations?: CopilotCitationDto[];
 }
+
+export interface CopilotAgentRunDto {
+  id: string;
+  userId?: string | null;
+  channel: string;
+  status: string;
+  failureReason?: string | null;
+  prompt: string;
+  startedAt: string;
+  completedAt?: string | null;
+  synthesisReport?: string | null;
+  agents: {
+    taskIndex: number;
+    name: string;
+    status: string;
+    summary?: string | null;
+    durationMs?: number | null;
+    iterations?: number | null;
+    apiCalls?: number | null;
+    milestones: string[];
+    resultText?: string | null;
+    error?: string | null;
+  }[];
+}
+
+export interface CopilotChatRunEnvelopeDto {
+  kind: "run";
+  conversationId: string;
+  runId: string;
+  placeholderMessageId: string;
+  status: string;
+}
