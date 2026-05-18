@@ -41,6 +41,7 @@ function toMessageRow(message: CopilotMessage): CopilotMessageRow {
     isUser: message.role === "user",
     isSystem: message.role === "system",
     tone,
+    ...(message.runId ? { runId: message.runId } : {}),
   };
 }
 

@@ -119,6 +119,7 @@ export function copilotChatChunkFromDto(
   dto: CopilotChatResponseChunkDto,
 ): CopilotChatResponseChunk {
   return {
+    kind: "chunk",
     conversationId: dto.conversation_id,
     messageId: dto.message_id,
     deltaText: dto.delta_text,

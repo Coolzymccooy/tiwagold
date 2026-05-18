@@ -15,6 +15,7 @@ export interface CopilotMessage {
   at: string;
   status: CopilotStatus;
   citations?: CopilotCitation[];
+  runId?: string;
 }
 
 export interface CopilotSession {
@@ -44,6 +45,7 @@ export interface CopilotChatRequest {
 }
 
 export interface CopilotChatResponseChunk {
+  kind: "chunk";
   conversationId: string;
   messageId: string;
   deltaText: string;
@@ -115,3 +117,5 @@ export interface CopilotChatRunEnvelope {
   placeholderMessageId: string;
   status: "running";
 }
+
+export type CopilotChatV2Response = CopilotChatResponseChunk | CopilotChatRunEnvelope;

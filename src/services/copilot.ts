@@ -24,6 +24,7 @@ import type {
   CopilotAgentRun,
   CopilotChatRequest,
   CopilotChatResponseChunk,
+  CopilotChatV2Response,
   CopilotConversation,
   CopilotMessage,
   CopilotSession,
@@ -167,8 +168,8 @@ export function fetchCopilotAgentRunLive(
 export function sendCopilotChatLive(
   request: CopilotChatRequest,
   bearerToken: string,
-): Promise<CopilotChatResponseChunk> {
-  return authFetch<CopilotChatResponseChunk>("/copilot/chat", {
+): Promise<CopilotChatV2Response> {
+  return authFetch<CopilotChatV2Response>("/copilot/chat", {
     method: "POST",
     bearerToken,
     extraHeaders: { Accept: "application/vnd.tiwagold.v2+json" },
@@ -272,11 +273,21 @@ export function useSendCopilotMessage(): UseMutationResult<
   return useMutation({
     mutationFn: async ({ sessionId, content }: SendCopilotMessageInput) => {
       if (isLiveBackendEnabled()) {
-        const chunk = await sendCopilotChatLive(
+        const response = await sendCopilotChatLive(
           { prompt: content, conversationId: sessionId },
           getBearerOrThrow(),
         );
-        return chunkToAssistantMessage(chunk);
+        if (response.kind === "run") {
+          return {
+            id: response.placeholderMessageId,
+            role: "assistant" as const,
+            content: "",
+            at: nowIso(),
+            status: "complete" as const,
+            runId: response.runId,
+          };
+        }
+        return chunkToAssistantMessage(response);
       }
       // Mock path mirrors the prior simulateFetch behaviour exactly.
       return simulateFetch<CopilotMessage>(() => {
@@ -318,7 +329,7 @@ export function useSendCopilotMessage(): UseMutationResult<
 }
 
 export function useCopilotChat(): UseMutationResult<
-  CopilotChatResponseChunk,
+  CopilotChatV2Response,
   Error,
   CopilotChatRequest
 > {
@@ -328,7 +339,7 @@ export function useCopilotChat(): UseMutationResult<
       if (isLiveBackendEnabled()) {
         return sendCopilotChatLive(request, getBearerOrThrow());
       }
-      return simulateFetch<CopilotChatResponseChunk>(() => {
+      return simulateFetch<CopilotChatV2Response>(() => {
         const conversationId = request.conversationId ?? createId("cps");
         const existing = sessionStore.get(conversationId);
         const createdAt = existing?.createdAt ?? nowIso();
@@ -369,6 +380,7 @@ export function useCopilotChat(): UseMutationResult<
         sessionStore.set(conversationId, session);
         upsertConversationSummary(conversationId, session);
         return {
+          kind: "chunk",
           conversationId,
           messageId: assistantMessage.id,
           deltaText: replyText,

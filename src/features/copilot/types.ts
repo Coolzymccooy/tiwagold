@@ -17,6 +17,7 @@ export interface CopilotMessageRow {
   isUser: boolean;
   isSystem: boolean;
   tone: CopilotMessageTone;
+  runId?: string;
 }
 
 export interface CopilotSuggestedPromptRow {
