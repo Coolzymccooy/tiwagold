@@ -23,6 +23,21 @@ export const palette = {
   shadow: "rgba(0,0,0,0.45)",
 } as const;
 
+// Color aliases for component use (mapping to palette for semantic meaning)
+export const color = {
+  textPrimary: palette.fg.primary,
+  textSecondary: palette.fg.muted,
+  textSubtle: palette.fg.subtle,
+  amber: palette.accent.gold,
+  amberSoft: "rgba(233,177,76,0.15)",
+  success: palette.status.success,
+  successSoft: "rgba(62,194,143,0.15)",
+  danger: palette.status.danger,
+  dangerSoft: "rgba(229,96,77,0.15)",
+  divider: palette.hairline,
+  surfaceMuted: palette.bg.elevated,
+} as const;
+
 export const spacing = {
   xs: 4,
   sm: 8,
@@ -63,6 +78,21 @@ export const font = {
     semibold: "JetBrainsMono_600SemiBold",
     bold: "JetBrainsMono_700Bold",
   },
+} as const;
+
+// Size aliases for text (mapping to type scale)
+export const size = {
+  caption: type.caption.fontSize,
+  body: type.body.fontSize,
+  title: type.title.fontSize,
+  headline: type.headline.fontSize,
+  display: type.display.fontSize,
+} as const;
+
+// Font family aliases for component use
+export const fontAlias = {
+  body: font.sans,
+  mono: font.mono,
 } as const;
 
 export type FontWeightName = keyof typeof font.sansWeights;
