@@ -13,6 +13,7 @@ import {
   fetchCopilotSessionLive,
   sendCopilotChatLive,
 } from "@/services/copilot";
+import { mapAgentRunDto } from "@/mappers/copilot";
 
 beforeEach(() => {
   mockAuthFetch.mockReset();
@@ -112,6 +113,7 @@ describe("sendCopilotChatLive", () => {
       method: "POST",
       bearerToken: "ACCESS",
       body: { prompt: "What now?" },
+      extraHeaders: { Accept: "application/vnd.tiwagold.v2+json" },
     });
   });
 
@@ -140,6 +142,7 @@ describe("sendCopilotChatLive", () => {
         conversationId: "cps_main_u1",
         context: { tradeId: "trd_42" },
       },
+      extraHeaders: { Accept: "application/vnd.tiwagold.v2+json" },
     });
   });
 
@@ -148,5 +151,111 @@ describe("sendCopilotChatLive", () => {
     await expect(
       sendCopilotChatLive({ prompt: "hi" }, "ACCESS"),
     ).rejects.toThrow("500 internal");
+  });
+
+  test("includes v2 Accept header in the extraHeaders", async () => {
+    mockAuthFetch.mockResolvedValueOnce({
+      conversationId: "cps_1",
+      messageId: "msg_1",
+      deltaText: "response",
+      status: "complete",
+    });
+
+    await sendCopilotChatLive({ prompt: "test" }, "ACCESS");
+
+    expect(mockAuthFetch).toHaveBeenCalledWith(
+      "/copilot/chat",
+      expect.objectContaining({
+        extraHeaders: { Accept: "application/vnd.tiwagold.v2+json" },
+      }),
+    );
+  });
+});
+
+describe("mapAgentRunDto", () => {
+  test("normalises a completed run with one agent", () => {
+    const dto = {
+      id: "run_abc123",
+      status: "completed",
+      failureReason: null,
+      channel: "copilot",
+      prompt: "Analyse the setup",
+      startedAt: "2026-05-18T10:00:00.000Z",
+      completedAt: "2026-05-18T10:05:30.000Z",
+      synthesisReport: "Gold is holding 2320 support, breakout risk at 2330.",
+      agents: [
+        {
+          taskIndex: 0,
+          name: "market_analyzer",
+          status: "completed",
+          summary: "Analysed the setup",
+          durationMs: 5000,
+          iterations: 2,
+          apiCalls: 3,
+          milestones: ["request_sent", "data_received", "analysis_complete"],
+          resultText: "Setup intact",
+          error: null,
+        },
+      ],
+    };
+
+    const result = mapAgentRunDto(dto);
+
+    expect(result).toEqual({
+      id: "run_abc123",
+      status: "completed",
+      failureReason: undefined,
+      channel: "copilot",
+      prompt: "Analyse the setup",
+      startedAt: "2026-05-18T10:00:00.000Z",
+      completedAt: "2026-05-18T10:05:30.000Z",
+      synthesisReport: "Gold is holding 2320 support, breakout risk at 2330.",
+      agents: [
+        {
+          taskIndex: 0,
+          name: "market_analyzer",
+          status: "completed",
+          summary: "Analysed the setup",
+          durationMs: 5000,
+          iterations: 2,
+          apiCalls: 3,
+          milestones: ["request_sent", "data_received", "analysis_complete"],
+          resultText: "Setup intact",
+          error: undefined,
+        },
+      ],
+    });
+  });
+
+  test("treats missing fields and null fields as undefined on the domain side", () => {
+    const dto = {
+      id: "run_def456",
+      status: "running",
+      channel: "mcp",
+      prompt: "Check exposure",
+      startedAt: "2026-05-18T11:00:00.000Z",
+      agents: [
+        {
+          taskIndex: 0,
+          name: "risk_checker",
+          status: "running",
+          milestones: [],
+        },
+      ],
+    };
+
+    const result = mapAgentRunDto(dto);
+
+    expect(result.failureReason).toBeUndefined();
+    expect(result.completedAt).toBeUndefined();
+    expect(result.synthesisReport).toBeUndefined();
+    const agent = result.agents[0];
+    if (!agent) throw new Error("expected at least one agent");
+    expect(agent.summary).toBeUndefined();
+    expect(agent.durationMs).toBeUndefined();
+    expect(agent.iterations).toBeUndefined();
+    expect(agent.apiCalls).toBeUndefined();
+    expect(agent.resultText).toBeUndefined();
+    expect(agent.error).toBeUndefined();
   });
 });
