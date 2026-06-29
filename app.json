@@ -20,7 +20,11 @@
     },
     "android": {
       "package": "com.tiwagold.app",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -46,6 +50,15 @@
         "projectId": "63a5ce76-d497-4fc2-ab61-efd6349d314f"
       }
     },
-    "owner": "coolzy"
+    "owner": "coolzy",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/63a5ce76-d497-4fc2-ab61-efd6349d314f",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    }
   }
 }
