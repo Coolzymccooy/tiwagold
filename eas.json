@@ -22,12 +22,20 @@
       },
       "ios": {
         "simulator": true
+      },
+      "env": {
+        "USE_LIVE_BACKEND": "true",
+        "PERSONA_OVERSEER_BASE_URL": "https://tiwa.tiwaton.co.uk"
       }
     },
     "production": {
       "extends": "base",
       "channel": "production",
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "USE_LIVE_BACKEND": "true",
+        "PERSONA_OVERSEER_BASE_URL": "https://tiwa.tiwaton.co.uk"
+      }
     }
   },
   "submit": {
