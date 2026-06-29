@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { useConnectBroker, brokerKeys } from "./broker";
 import { useRequestSignedIntent } from "./signedIntent";
+import { isLiveBackendEnabled } from "./liveBackend";
 import type { BrokerConnection } from "@/types/broker";
 
 export type MT5Server = "MetaQuotes-Demo" | "ICMarketsSC-Demo" | "ICMarketsSC-Live";
@@ -69,25 +70,36 @@ export function useConnectMT5(): UseConnectMT5Result {
   const connectMutation = useConnectBroker();
 
   const connect = async (input: MT5ConnectInput): Promise<BrokerConnection> => {
-    const intent = await intentMutation.mutateAsync({
-      purpose: "broker.connect",
-      subjectId: `mt5:${input.accountId}@${input.server}`,
-    });
-    const config = readBridgeConfig();
-    if (config.baseUrl) {
-      await postToBridge(
-        "/v1/mt5/connect",
-        {
-          account_id: input.accountId,
-          password: input.password,
-          server: input.server,
-          intent_token: intent.token,
-        },
-        config,
-      );
+    // Live backend: POST /broker/connections is Bearer-authed and does NOT
+    // require a signed intent (broker-connect signed-intent is a future PR; the
+    // cloud only scopes trade.approve/deny/kill_switch to signed intents). The
+    // mock signed-intent request throws in production builds, so when live we
+    // skip it entirely and let useConnectBroker submit the encrypted creds —
+    // the per-user bridge is then provisioned server-side. The legacy direct
+    // bridge post (/v1/mt5/connect) is dev/mock-only.
+    let intentToken = "";
+    if (!isLiveBackendEnabled()) {
+      const intent = await intentMutation.mutateAsync({
+        purpose: "broker.connect",
+        subjectId: `mt5:${input.accountId}@${input.server}`,
+      });
+      intentToken = intent.token;
+      const config = readBridgeConfig();
+      if (config.baseUrl) {
+        await postToBridge(
+          "/v1/mt5/connect",
+          {
+            account_id: input.accountId,
+            password: input.password,
+            server: input.server,
+            intent_token: intent.token,
+          },
+          config,
+        );
+      }
     }
     return connectMutation.mutateAsync({
-      intentToken: intent.token,
+      intentToken,
       kind: "mt5",
       accountLabel: `MT5 · ${input.server}`,
       login: input.accountId,
