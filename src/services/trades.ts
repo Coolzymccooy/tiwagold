@@ -17,19 +17,27 @@ import type {
   ExecutionStatus,
   Trade,
 } from "@/types/trade";
+import { useAuthStore, selectAccessToken } from "@/state/authStore";
 import { nowIso, simulateFetch } from "./client";
-import { isLiveBackendEnabled, liveFetch } from "./liveBackend";
+import { isLiveBackendEnabled, authFetch } from "./liveBackend";
 import { assertSignedIntentInProduction } from "./signedIntent";
 
-const JOURNAL_PATH = "/trading/journal";
+// JWT-scoped: the signed-in user's OWN trades, never the house engine journal.
+// (The old shared-key /trading/journal returned the operator's trades to every
+// user — a multi-tenant data leak.)
+const JOURNAL_PATH = "/me/journal";
 
-async function fetchTradesLive(): Promise<Trade[]> {
-  const raw = await liveFetch<unknown>(JOURNAL_PATH);
+function shouldUseLive(token: string | null): boolean {
+  return isLiveBackendEnabled() && Boolean(token && token.length > 0);
+}
+
+async function fetchTradesLive(accessToken: string): Promise<Trade[]> {
+  const raw = await authFetch<unknown>(JOURNAL_PATH, { bearerToken: accessToken });
   return journalToTrades(parseJournalDto(raw));
 }
 
-async function fetchTradeLive(id: string): Promise<Trade> {
-  const trades = await fetchTradesLive();
+async function fetchTradeLive(id: string, accessToken: string): Promise<Trade> {
+  const trades = await fetchTradesLive(accessToken);
   const trade = trades.find((t) => t.id === id);
   if (!trade) throw new Error("Trade not found");
   return trade;
@@ -43,20 +51,24 @@ export const tradeKeys = {
 };
 
 export function useTrades(): UseQueryResult<Trade[], Error> {
+  const accessToken = useAuthStore(selectAccessToken)?.value ?? null;
   return useQuery({
     queryKey: tradeKeys.all,
     queryFn: () =>
-      isLiveBackendEnabled() ? fetchTradesLive() : simulateFetch(() => MOCK_TRADES),
+      shouldUseLive(accessToken)
+        ? fetchTradesLive(accessToken as string)
+        : simulateFetch(() => MOCK_TRADES),
     staleTime: 10_000,
   });
 }
 
 export function useTrade(id: string | undefined): UseQueryResult<Trade, Error> {
+  const accessToken = useAuthStore(selectAccessToken)?.value ?? null;
   return useQuery({
     queryKey: id ? tradeKeys.detail(id) : ["trade", "pending"],
     queryFn: () => {
       if (!id) throw new Error("Missing trade id");
-      if (isLiveBackendEnabled()) return fetchTradeLive(id);
+      if (shouldUseLive(accessToken)) return fetchTradeLive(id, accessToken as string);
       return simulateFetch(() => {
         const trade = findMockTrade(id);
         if (!trade) throw new Error("Trade not found");
