@@ -23,6 +23,7 @@ import { palette } from "@/design/tokens";
 import { useAuthRouting } from "@/hooks/useAuthRouting";
 import { useEnginePrefsCloudSync } from "@/services/engineSync";
 import { usePushNotificationDeepLinks } from "@/services/pushDeepLinks";
+import { UpdateBanner } from "@/components/UpdateBanner";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -31,13 +32,16 @@ function RootStack() {
   useEnginePrefsCloudSync();
   usePushNotificationDeepLinks();
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: palette.bg.base },
-        animation: "fade",
-      }}
-    />
+    <>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: palette.bg.base },
+          animation: "fade",
+        }}
+      />
+      <UpdateBanner />
+    </>
   );
 }
 
