@@ -11,18 +11,30 @@ import type {
   AnalyticsSummary,
   EquityPoint,
 } from "@/types/analytics";
+import { useAuthStore, selectAccessToken } from "@/state/authStore";
 import { simulateFetch } from "./client";
-import { isLiveBackendEnabled, liveFetch } from "./liveBackend";
+import { isLiveBackendEnabled, authFetch } from "./liveBackend";
 
-const JOURNAL_PATH = "/trading/journal";
+// JWT-scoped per-user journal (not the shared-key house journal).
+const JOURNAL_PATH = "/me/journal";
 
-async function fetchSummaryLive(range: AnalyticsRange): Promise<AnalyticsSummary> {
-  const raw = await liveFetch<unknown>(JOURNAL_PATH);
+function shouldUseLive(token: string | null): boolean {
+  return isLiveBackendEnabled() && Boolean(token && token.length > 0);
+}
+
+async function fetchSummaryLive(
+  range: AnalyticsRange,
+  accessToken: string,
+): Promise<AnalyticsSummary> {
+  const raw = await authFetch<unknown>(JOURNAL_PATH, { bearerToken: accessToken });
   return journalToAnalyticsSummary(parseJournalDto(raw), range);
 }
 
-async function fetchEquityLive(range: AnalyticsRange): Promise<AnalyticsEquitySeries> {
-  const raw = await liveFetch<unknown>(JOURNAL_PATH);
+async function fetchEquityLive(
+  range: AnalyticsRange,
+  accessToken: string,
+): Promise<AnalyticsEquitySeries> {
+  const raw = await authFetch<unknown>(JOURNAL_PATH, { bearerToken: accessToken });
   return journalToAnalyticsEquity(parseJournalDto(raw), range);
 }
 
@@ -158,11 +170,12 @@ function scaleSummaryForRange(
 export function useAnalyticsSummary(
   range: AnalyticsRange = "30d",
 ): UseQueryResult<AnalyticsSummary, Error> {
+  const accessToken = useAuthStore(selectAccessToken)?.value ?? null;
   return useQuery({
     queryKey: analyticsKeys.summary(range),
     queryFn: () =>
-      isLiveBackendEnabled()
-        ? fetchSummaryLive(range)
+      shouldUseLive(accessToken)
+        ? fetchSummaryLive(range, accessToken as string)
         : simulateFetch<AnalyticsSummary>(() =>
             scaleSummaryForRange(MOCK_ANALYTICS, range),
           ),
@@ -173,11 +186,12 @@ export function useAnalyticsSummary(
 export function useAnalyticsEquity(
   range: AnalyticsRange = "30d",
 ): UseQueryResult<AnalyticsEquitySeries, Error> {
+  const accessToken = useAuthStore(selectAccessToken)?.value ?? null;
   return useQuery({
     queryKey: analyticsKeys.equity(range),
     queryFn: () =>
-      isLiveBackendEnabled()
-        ? fetchEquityLive(range)
+      shouldUseLive(accessToken)
+        ? fetchEquityLive(range, accessToken as string)
         : simulateFetch<AnalyticsEquitySeries>(() =>
             computeEquitySeries(range, MOCK_ANALYTICS.equityCurve),
           ),
