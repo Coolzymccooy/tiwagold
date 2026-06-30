@@ -2,7 +2,7 @@
   "name": "tiwagold",
   "private": true,
   "version": "0.1.0",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "scripts": {
     "start": "expo start",
     "ios": "expo run:ios",
@@ -54,6 +54,7 @@
     "react-hook-form": "^7.54.2",
     "react-native": "0.81.5",
     "react-native-gesture-handler": "~2.28.0",
+    "react-native-get-random-values": "~1.11.0",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",

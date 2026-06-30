@@ -1,3 +1,6 @@
+// MUST be first — installs crypto.getRandomValues (Hermes lacks it) so
+// @noble/curves can generate the P-256 signed-intent key on Approve.
+import "react-native-get-random-values";
 import { useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
