@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
 import {
-  useApproveTrade,
   useExecuteTrade,
   useTrade,
   useUpdateTradeStatus,
@@ -9,6 +8,10 @@ import {
   SignedIntentError,
   useRequestSignedIntent,
 } from "@/services/signedIntent";
+// Per-user pending-signal approval — signs a real P-256 intent and POSTs
+// /trades/:id/approve. This is the live flow; the legacy mock requestSignedIntent
+// (kept for `execute`) hard-throws backend_unavailable in production builds.
+import { useApproveTrade } from "@/services/pendingTrades";
 import { toTradeDetailView } from "./selectors";
 import type { TradeDetailView } from "./types";
 
@@ -49,20 +52,15 @@ export function useTradeDetail(id: string | undefined): UseTradeDetailResult {
     setActionError(null);
     void (async () => {
       try {
-        const intent = await intentMutation.mutateAsync({
-          purpose: "trade.approve",
-          subjectId: id,
-        });
-        await approveMutation.mutateAsync({
-          id,
-          intentToken: intent.token,
-          note: "Approved by operator",
-        });
+        // The pending-trade approve mutation mints the signed intent (P-256 via
+        // liveSignedIntent) and POSTs /trades/:id/approve internally — no
+        // separate mock intent request. This is what restores live approvals.
+        await approveMutation.mutateAsync({ tradeId: id });
       } catch (error: unknown) {
         setActionError(toActionError(error));
       }
     })();
-  }, [id, intentMutation, approveMutation]);
+  }, [id, approveMutation]);
 
   const execute = useCallback(() => {
     if (!id) return;
