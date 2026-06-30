@@ -42,8 +42,8 @@
       "router": {
         "origin": false
       },
-      "USE_LIVE_BACKEND": false,
-      "PERSONA_OVERSEER_BASE_URL": "",
+      "USE_LIVE_BACKEND": true,
+      "PERSONA_OVERSEER_BASE_URL": "https://tiwa.tiwaton.co.uk",
       "PERSONA_OVERSEER_API_KEY": "",
       "PERSONA_OVERSEER_DEVICE_TOKEN": "",
       "eas": {

@@ -6,7 +6,10 @@
   "build": {
     "base": {
       "node": "20.18.0",
-      "channel": "base"
+      "channel": "base",
+      "env": {
+        "USE_LIVE_BACKEND": "false"
+      }
     },
     "development": {
       "extends": "base",
