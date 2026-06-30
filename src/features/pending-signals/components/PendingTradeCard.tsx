@@ -1,12 +1,14 @@
 import { useCallback, useState } from "react";
 import { View, StyleSheet, Alert } from "react-native";
+import { useRouter } from "expo-router";
 import { GlassCard, PressableScale, Text } from "@/design/primitives";
 import { palette, spacing, radius, font } from "@/design/tokens";
 import type { PendingTrade } from "@/types/dto/pendingTrades";
 
 interface PendingTradeCardProps {
   trade: PendingTrade;
-  onApprove: (tradeId: string) => Promise<void>;
+  /** Deprecated: approval now happens via slide-to-approve on the trade detail. */
+  onApprove?: (tradeId: string) => Promise<void>;
   onDeny: (tradeId: string) => Promise<void>;
   /** When true, both buttons disabled while a mutation is in flight. */
   busy?: boolean;
@@ -27,38 +29,22 @@ function engineColor(engine: PendingTrade["engine"]): string {
 
 export function PendingTradeCard({
   trade,
-  onApprove,
   onDeny,
   busy,
 }: PendingTradeCardProps) {
-  const [pending, setPending] = useState<"approve" | "deny" | null>(null);
+  const router = useRouter();
+  const [pending, setPending] = useState<"deny" | null>(null);
   const disabled = busy || pending !== null;
 
   const directionLabel = trade.direction === "BUY" ? "Buy" : "Sell";
   const directionColor =
     trade.direction === "BUY" ? palette.status.success : palette.status.danger;
 
+  // Approval is a deliberate slide-to-approve on the trade detail — the single
+  // approve gesture across the app. Tapping Approve opens that screen.
   const handleApprove = useCallback(() => {
-    Alert.alert(
-      `Approve ${directionLabel} ${trade.symbol}?`,
-      `Tiwa will place a ${directionLabel.toLowerCase()} ${formatNumber(trade.lotSize, 2)} lots at ${formatNumber(trade.entryPrice)} on your MT5 account.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Approve",
-          style: "default",
-          onPress: async () => {
-            setPending("approve");
-            try {
-              await onApprove(trade.id);
-            } finally {
-              setPending(null);
-            }
-          },
-        },
-      ],
-    );
-  }, [trade, directionLabel, onApprove]);
+    router.push(`/trade/${trade.id}`);
+  }, [router, trade.id]);
 
   const handleDeny = useCallback(() => {
     Alert.alert(
@@ -136,7 +122,7 @@ export function PendingTradeCard({
           style={[styles.btn, styles.btnApprove, disabled && styles.btnDisabled]}
         >
           <Text variant="title" style={styles.btnApproveText}>
-            {pending === "approve" ? "Approving…" : "Approve"}
+            {"Review & approve"}
           </Text>
         </PressableScale>
       </View>
