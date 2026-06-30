@@ -3,6 +3,9 @@ import { render, fireEvent } from "@testing-library/react-native";
 import { PendingTradeCard } from "@/features/pending-signals/components/PendingTradeCard";
 import type { PendingTrade } from "@/types/dto/pendingTrades";
 
+const mockPush = jest.fn();
+jest.mock("expo-router", () => ({ useRouter: () => ({ push: mockPush }) }));
+
 function makeTrade(overrides: Partial<PendingTrade> = {}): PendingTrade {
   return {
     id: "trade_1",
@@ -33,6 +36,7 @@ interface AlertButton {
 describe("PendingTradeCard", () => {
   beforeEach(() => {
     jest.spyOn(Alert, "alert").mockImplementation(() => {});
+    mockPush.mockClear();
   });
   afterEach(() => {
     jest.restoreAllMocks();
@@ -50,7 +54,7 @@ describe("PendingTradeCard", () => {
     expect(getByText("BUY XAUUSD")).toBeTruthy();
     expect(getByText("2,400.00")).toBeTruthy();
     expect(getByText("LIMIT ENTRY")).toBeTruthy();
-    expect(getByText("Approve")).toBeTruthy();
+    expect(getByText("Review & approve")).toBeTruthy();
     expect(getByText("Deny")).toBeTruthy();
   });
 
@@ -76,28 +80,14 @@ describe("PendingTradeCard", () => {
     expect(getByText("Conservative")).toBeTruthy();
   });
 
-  test("Approve press shows confirm Alert with Approve action", () => {
-    const onApprove = jest.fn(async () => {});
+  test("Approve opens the trade detail (slide-to-approve), no inline Alert", () => {
     const { getByText } = render(
-      <PendingTradeCard
-        trade={makeTrade()}
-        onApprove={onApprove}
-        onDeny={async () => {}}
-      />,
+      <PendingTradeCard trade={makeTrade()} onDeny={async () => {}} />,
     );
-    fireEvent.press(getByText("Approve"));
-    expect(Alert.alert).toHaveBeenCalledTimes(1);
-    const [title, , buttons] = (Alert.alert as jest.Mock).mock.calls[0] as [
-      string,
-      string,
-      AlertButton[],
-    ];
-    expect(title).toMatch(/Approve.*XAUUSD/);
-    const approveButton = buttons.find((b) => b.text === "Approve");
-    expect(approveButton).toBeDefined();
-    // Simulate the user tapping the Approve button in the Alert dialog.
-    approveButton?.onPress?.();
-    expect(onApprove).toHaveBeenCalledWith("trade_1");
+    fireEvent.press(getByText("Review & approve"));
+    // Approval is the deliberate slide on the trade detail — tapping navigates there.
+    expect(mockPush).toHaveBeenCalledWith("/trade/trade_1");
+    expect(Alert.alert).not.toHaveBeenCalled();
   });
 
   test("Deny press shows confirm Alert with Deny action", () => {
@@ -133,17 +123,11 @@ describe("PendingTradeCard", () => {
   });
 
   test("buttons disable while busy=true", () => {
-    const onApprove = jest.fn();
     const { getByText } = render(
-      <PendingTradeCard
-        trade={makeTrade()}
-        onApprove={onApprove}
-        onDeny={async () => {}}
-        busy
-      />,
+      <PendingTradeCard trade={makeTrade()} onDeny={async () => {}} busy />,
     );
-    fireEvent.press(getByText("Approve"));
-    // Pressable.disabled blocks onPress, so Alert should not have been called.
-    expect(Alert.alert).not.toHaveBeenCalled();
+    fireEvent.press(getByText("Review & approve"));
+    // Pressable.disabled blocks onPress, so no navigation should occur.
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });
