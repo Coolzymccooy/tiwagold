@@ -1,4 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
+import { useRouter } from "expo-router";
+import { showToast } from "@/lib/toast";
 import {
   useExecuteTrade,
   useTrade,
@@ -34,6 +36,7 @@ export interface UseTradeDetailResult {
 }
 
 export function useTradeDetail(id: string | undefined): UseTradeDetailResult {
+  const router = useRouter();
   const query = useTrade(id);
   const approveMutation = useApproveTrade();
   const executeMutation = useExecuteTrade();
@@ -48,19 +51,30 @@ export function useTradeDetail(id: string | undefined): UseTradeDetailResult {
   );
 
   const approve = useCallback(() => {
-    if (!id) return;
+    // Re-entry guard: a second fire while the first is in flight would race the
+    // backend (first flips awaiting_approval→approved, second would 409). The
+    // backend is also idempotent for this, but guarding here keeps the UX clean.
+    if (!id || approveMutation.isPending) return;
     setActionError(null);
+    // Engage the user immediately — the slide's pending label alone was too
+    // subtle, so approvals felt unresponsive until an error appeared.
+    showToast("Approving — routing to broker…");
     void (async () => {
       try {
         // The pending-trade approve mutation mints the signed intent (P-256 via
         // liveSignedIntent) and POSTs /trades/:id/approve internally — no
         // separate mock intent request. This is what restores live approvals.
         await approveMutation.mutateAsync({ tradeId: id });
+        showToast("Approved ✓");
+        // Return to the feed; the pending list refetches (mutation invalidates
+        // it) so the approved signal drops off — clear confirmation it worked.
+        router.back();
       } catch (error: unknown) {
         setActionError(toActionError(error));
+        showToast("Couldn't approve — see details below");
       }
     })();
-  }, [id, approveMutation]);
+  }, [id, approveMutation, router]);
 
   const execute = useCallback(() => {
     if (!id) return;
