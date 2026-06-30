@@ -33,6 +33,18 @@ jest.mock("@/services/trades", () => ({
   useUpdateTradeStatus: () => ({ mutate: jest.fn(), isPending: false }),
 }));
 
+const mockBack = jest.fn();
+jest.mock("expo-router", () => ({
+  __esModule: true,
+  useRouter: () => ({ back: mockBack, push: jest.fn() }),
+}));
+
+const mockToast = jest.fn();
+jest.mock("@/lib/toast", () => ({
+  __esModule: true,
+  showToast: (msg: string) => mockToast(msg),
+}));
+
 import { renderHook, act, waitFor } from "@testing-library/react-native";
 import { useTradeDetail } from "@/features/trade-detail/hooks";
 
@@ -40,6 +52,8 @@ describe("useTradeDetail.approve — live per-user path (regression)", () => {
   beforeEach(() => {
     mockApprove.mockClear();
     mockRequestIntent.mockClear();
+    mockBack.mockClear();
+    mockToast.mockClear();
   });
 
   it("approves via the per-user mutation with the trade id", async () => {
@@ -67,5 +81,17 @@ describe("useTradeDetail.approve — live per-user path (regression)", () => {
       result.current.approve();
     });
     await waitFor(() => expect(result.current.actionError).not.toBeNull());
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  it("gives feedback: toast on start + success, and returns to the feed", async () => {
+    const { result } = renderHook(() => useTradeDetail("trade_1"));
+    act(() => {
+      result.current.approve();
+    });
+    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    // immediate engagement toast + success toast
+    expect(mockToast).toHaveBeenCalledWith(expect.stringMatching(/approv/i));
+    expect(mockToast.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 });
