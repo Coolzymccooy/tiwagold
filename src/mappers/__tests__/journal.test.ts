@@ -121,8 +121,15 @@ describe("journalRowToTrade", () => {
     const row = fixture().trades[2]!;
     const trade = journalRowToTrade(row);
     expect(trade.sessionTag).toBe("asian");
-    expect(trade.status).toBe("created");
+    // VALID = approved + routed (awaiting fill) → "approved" (Active bucket).
+    expect(trade.status).toBe("approved");
     expect(trade.autopsy).toBeUndefined();
+  });
+
+  test("maps WAIT (awaiting approval) to created/pending and VALID (approved) to approved/active", () => {
+    const base = fixture().trades[2]!;
+    expect(journalRowToTrade({ ...base, state: "WAIT" }).status).toBe("created");
+    expect(journalRowToTrade({ ...base, state: "VALID" }).status).toBe("approved");
   });
 
   test("prefers explicit mode='aggressive' from cloud over substring inference", () => {

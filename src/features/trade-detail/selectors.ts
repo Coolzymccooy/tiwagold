@@ -87,6 +87,9 @@ export function toTradeDetailView(trade: Trade): TradeDetailView {
     isClosed,
     canCancel: trade.status === "created" || trade.status === "approved",
     canApprove: trade.status === "created",
-    canExecute: trade.status === "approved" && !trade.autopsy,
+    // Per-user trades auto-execute via the bridge once approved — there is no
+    // manual execute step, and the legacy execute path isn't wired in prod
+    // (it would 503 on the placeholder intent). Never offer the execute slide.
+    canExecute: false,
   };
 }
