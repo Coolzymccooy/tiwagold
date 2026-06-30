@@ -233,12 +233,14 @@ describe("trade-detail selectors — toTradeDetailView", () => {
     expect(view.canExecute).toBe(false);
   });
 
-  it("marks approved trades as cancellable and executable but not approvable", () => {
+  it("marks approved trades as open + cancellable, never approvable or (manually) executable", () => {
     const view = toTradeDetailView(makeTrade({ status: "approved" }));
     expect(view.isOpen).toBe(true);
     expect(view.canApprove).toBe(false);
     expect(view.canCancel).toBe(true);
-    expect(view.canExecute).toBe(true);
+    // Per-user trades auto-execute via the bridge; the manual execute slide is
+    // never offered (the legacy execute path is unwired in prod).
+    expect(view.canExecute).toBe(false);
   });
 
   it("marks executed trades as open without approve/cancel/execute", () => {

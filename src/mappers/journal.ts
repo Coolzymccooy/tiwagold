@@ -74,9 +74,13 @@ function resolveMode(row: JournalTradeRowDto): TradeMode {
 
 function statusFromJournalState(state: string): CandidateStatus {
   switch (state.toUpperCase()) {
-    case "VALID":
+    // WAIT = awaiting the user's approval → "pending" bucket (Pending tab).
     case "WAIT":
       return "created";
+    // VALID = approved + routed to broker, awaiting fill → "Active" bucket, so
+    // approving visibly moves the trade out of Pending (confirms it routed).
+    case "VALID":
+      return "approved";
     case "TRIGGERED":
     case "CLOSED":
       return "executed";
