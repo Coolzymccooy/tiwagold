@@ -22,6 +22,7 @@ import {
 import { palette } from "@/design/tokens";
 import { useAuthRouting } from "@/hooks/useAuthRouting";
 import { useEnginePrefsCloudSync } from "@/services/engineSync";
+import { useRiskPrefsCloudSync } from "@/services/riskSync";
 import { usePushNotificationDeepLinks } from "@/services/pushDeepLinks";
 import { UpdateBanner } from "@/components/UpdateBanner";
 
@@ -30,6 +31,7 @@ void SplashScreen.preventAutoHideAsync();
 function RootStack() {
   useAuthRouting();
   useEnginePrefsCloudSync();
+  useRiskPrefsCloudSync();
   usePushNotificationDeepLinks();
   return (
     <>
