@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from "react";
+import { useRouter } from "expo-router";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { GlassCard, PressableScale, Screen, Text } from "@/design/primitives";
 import { palette, radius, spacing } from "@/design/tokens";
@@ -31,6 +32,7 @@ import type {
 } from "./types";
 
 export function SettingsScreen() {
+  const router = useRouter();
   const { view, isLoading, isError, refetch } = useSettings();
   const { signOut, isSigningOut } = useSignOutAction();
   const { deleteAccount, isDeleting } = useDeleteAccountAction();
@@ -146,6 +148,21 @@ export function SettingsScreen() {
           ))}
         </SectionCard>
 
+        <PressableScale
+          onPress={() => router.push("/help")}
+          style={styles.helpCard}
+          accessibilityRole="button"
+          accessibilityLabel="How Tiwa works and the Blue Guardian rules"
+        >
+          <View style={styles.helpText}>
+            <Text variant="body" weight="semibold">How Tiwa works & Blue Guardian rules</Text>
+            <Text variant="caption" tone="muted">
+              Signals, automated management, and the guardrails keeping your account safe
+            </Text>
+          </View>
+          <Text variant="title" tone="muted">›</Text>
+        </PressableScale>
+
         <SignOutButton
           label={COPY.settings.actions.signOut}
           onPress={signOut}
@@ -178,5 +195,20 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderRadius: radius.md,
     backgroundColor: palette.accent.gold,
+  },
+  helpCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+    padding: spacing.lg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: palette.hairline,
+    backgroundColor: palette.bg.glass,
+  },
+  helpText: {
+    flex: 1,
+    gap: 2,
   },
 });
